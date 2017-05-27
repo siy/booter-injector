@@ -1,19 +1,14 @@
 package io.booter.injector.core.supplier;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.Optional;
 import java.util.function.Supplier;
-
 import javax.annotation.PostConstruct;
 
 import io.booter.injector.annotations.ComputationStyle;
 import io.booter.injector.annotations.Singleton;
 import io.booter.injector.core.SupplierFactory;
-import io.booter.injector.core.exception.InjectorException;
 
 public class DefaultSupplierFactory implements SupplierFactory {
     public DefaultSupplierFactory() {
@@ -21,23 +16,26 @@ public class DefaultSupplierFactory implements SupplierFactory {
 
     @Override
     public <T> Supplier<T> create(Constructor<T> constructor, Supplier<?>[] parameters) {
-        Supplier<T> instanceSupplier = LambdaFactory.create(constructor, parameters);
         Singleton singleton = constructor.getDeclaringClass().getAnnotation(Singleton.class);
+        Supplier<T> instanceSupplier = wrapWithPostConstruct(constructor, LambdaFactory.create(constructor, parameters));
 
         return wrap(singleton, instanceSupplier);
     }
 
     @Override
     public <T> Supplier<T> createSingleton(Constructor<T> constructor, Supplier<?>[] parameters, boolean eager) {
-        Supplier<T> instanceSupplier = LambdaFactory.create(constructor, parameters);
+        Supplier<T> instanceSupplier = wrapWithPostConstruct(constructor, LambdaFactory.create(constructor, parameters));
 
+        return buildSingletonSupplier(instanceSupplier, eager);
+    }
+
+    private <T> Supplier<T> wrapWithPostConstruct(Constructor<T> constructor, Supplier<T> instanceSupplier) {
         MethodHandle methodHandle = locatePostConstructMethod(constructor.getDeclaringClass());
 
         if (methodHandle != null) {
-            instanceSupplier = new PostConstructInvokingSupplier(instanceSupplier, methodHandle);
+            return new PostConstructInvokingSupplier(instanceSupplier, methodHandle);
         }
-
-        return buildSingletonSupplier(instanceSupplier, eager);
+        return instanceSupplier;
     }
 
     private <T> MethodHandle locatePostConstructMethod(Class<T> declaringClass) {

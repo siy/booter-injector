@@ -1,6 +1,7 @@
 package io.booter.injector.core;
 
 import java.lang.reflect.*;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
@@ -13,7 +14,7 @@ import io.booter.injector.annotations.Inject;
 import io.booter.injector.annotations.Supplies;
 import io.booter.injector.core.exception.InjectorException;
 import io.booter.injector.core.supplier.DefaultSupplierFactory;
-import io.booter.injector.core.supplier.MethodCallSupplier;
+import io.booter.injector.core.supplier.LambdaFactory;
 
 public class LazyInjector implements Injector {
     private final ConcurrentMap<Key, Supplier<?>> bindings = new ConcurrentHashMap<>();
@@ -123,7 +124,7 @@ public class LazyInjector implements Injector {
         Supplier<?>[] invocationParameters = buildMethodCallParameters(method, instanceSupplier);
 
         bindings.computeIfAbsent(Key.of(method.getGenericReturnType()),
-                                 (key) -> new MethodCallSupplier<>(method, invocationParameters));
+                                 (key) -> LambdaFactory.create(method, invocationParameters));
     }
 
     private Supplier<?>[] buildMethodCallParameters(Method method, Supplier<?> instanceSupplier) {
@@ -137,44 +138,15 @@ public class LazyInjector implements Injector {
     }
 
     private Supplier<?>[] collectParameterSuppliers(Executable instanceConstructor) {
-        Parameter[] parameters = instanceConstructor.getParameters();
-        Supplier<?>[] suppliers = new Supplier<?>[parameters.length];
-
-        for (int i = 0; i < parameters.length; i++) {
-            Key parameterKey = calculateParameterKey(parameters[i]);
-            suppliers[i] = lookupSupplier(parameterKey, isSupplier(parameters[i]));
-        }
-
-        return suppliers;
+        return Arrays.stream(instanceConstructor.getParameters())
+                     .map(p -> Key.of(p))
+                     .map(k -> lookupSupplier(k))
+                     .toArray(Supplier[]::new);
     }
 
-    private Supplier<?> lookupSupplier(Key parameterKey, boolean wrapSupplier) {
+    private Supplier<?> lookupSupplier(Key parameterKey) {
         Supplier<?> supplier = supplier(parameterKey);
-        return wrapSupplier ? () -> supplier : supplier;
-    }
-
-    private static boolean isSupplier(Parameter parameter) {
-        //Note that this check limits parameter type exactly to Supplier class.
-        //Opposite order would allow all derived classes to be accepted which is not feasible.
-        return parameter.getType().isAssignableFrom(Supplier.class);
-    }
-
-    private static Key calculateParameterKey(Parameter parameter) {
-        if (!isSupplier(parameter)) {
-            return Key.of(parameter);
-        }
-
-        Type type = parameter.getParameterizedType();
-
-        if (type instanceof ParameterizedType) {
-            Type[] args = ((ParameterizedType) type).getActualTypeArguments();
-
-            if (args.length > 0 && args[0] instanceof Class) {
-                return Key.of(args[0]);
-            }
-        }
-
-        throw new InjectorException("Unable to determine parameter type for " + parameter);
+        return parameterKey.isSupplier() ? () -> supplier : supplier;
     }
 
     static Constructor<?> locateConstructor(Key key) {

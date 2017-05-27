@@ -5,11 +5,12 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
+import io.booter.injector.core.exception.InjectorException;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MethodHandleInvokerTest {
+public class LambdaFactoryMethodTest {
     private final Supplier<?>[] parameters = new Supplier[]{
             () -> null,
             () -> 123,
@@ -21,9 +22,6 @@ public class MethodHandleInvokerTest {
             () -> 456,
             () -> 567L,
             () -> "s3",
-            () -> 567,
-            () -> 678L,
-            () -> "s4"
     };
 
     private Class<?>[] types = new Class[]{
@@ -37,82 +35,75 @@ public class MethodHandleInvokerTest {
             long.class,
             String.class,
             int.class,
-            long.class,
-            String.class,
             };
 
-    public MethodHandleInvokerTest() {
+    public LambdaFactoryMethodTest() {
         parameters[0] = () -> this;
     }
 
     @Test
-    public void noParametersMethodIsInvoked() throws Throwable {
-        Object result = createInvokerForMethod("method0", new Supplier<?>[]{() -> this});
+    public void shouldCallMethodWith0Parameters() throws Throwable {
+        Object result = createAndCallLambda("method0", new Supplier<?>[]{() -> this});
 
         assertThat(result).isInstanceOf(String.class);
         assertThat(result).isEqualTo("some value");
     }
 
     @Test
-    public void methodsWith1ParameteIsInvoked() throws Throwable {
+    public void shouldCallMethodWith1Parameter() throws Throwable {
         createAndInvokeMethod(1);
     }
 
     @Test
-    public void methodsWith2ParametersIsInvoked() throws Throwable {
+    public void shouldCallMethodWith2Parameters() throws Throwable {
         createAndInvokeMethod(2);
     }
 
     @Test
-    public void methodsWith3ParametersIsInvoked() throws Throwable {
+    public void shouldCallMethodWith3Parameters() throws Throwable {
         createAndInvokeMethod(3);
     }
 
     @Test
-    public void methodsWith4ParametersIsInvoked() throws Throwable {
+    public void shouldCallMethodWith4Parameters() throws Throwable {
         createAndInvokeMethod(4);
     }
 
     @Test
-    public void methodsWith5ParametersIsInvoked() throws Throwable {
+    public void shouldCallMethodWith5Parameters() throws Throwable {
         createAndInvokeMethod(5);
     }
 
     @Test
-    public void methodsWith6ParametersIsInvoked() throws Throwable {
+    public void shouldCallMethodWith6Parameters() throws Throwable {
         createAndInvokeMethod(6);
     }
 
     @Test
-    public void methodsWith7ParametersIsInvoked() throws Throwable {
+    public void shouldCallMethodWith7Parameters() throws Throwable {
         createAndInvokeMethod(7);
     }
 
     @Test
-    public void methodsWith8ParametersIsInvoked() throws Throwable {
+    public void shouldCallMethodWith8Parameters() throws Throwable {
         createAndInvokeMethod(8);
     }
 
     @Test
-    public void methodsWith9ParametersIsInvoked() throws Throwable {
+    public void shouldCallMethodWith9Parameters() throws Throwable {
         createAndInvokeMethod(9);
     }
 
-    @Test
-    public void methodsWith10ParametersIsInvoked() throws Throwable {
+    @Test(expected = InjectorException.class)
+    public void shouldFailToCreateLambdaForMethodWith10Parameters() throws Throwable {
         createAndInvokeMethod(10);
-    }
-
-    @Test
-    public void methodsWith11ParametersIsInvoked() throws Throwable {
-        createAndInvokeMethod(11);
     }
 
     private void createAndInvokeMethod(int size) throws Throwable {
         Supplier<?>[] params = Arrays.copyOf(parameters, size + 1);
         Class<?>[] paramTypes = Arrays.copyOf(types, size);
 
-        Object result = createInvokerForMethod("method" + size, params, paramTypes);
+        Object result = createAndCallLambda("method" + size, params, paramTypes);
 
         assertThat(result).isNotNull();
         assertThat(result).isInstanceOf(Object[].class);
@@ -173,20 +164,8 @@ public class MethodHandleInvokerTest {
         return new Object[]{val0, val1, val2, val3, val4, val5, val6, val7, val8, val9};
     }
 
-    public Object[] method11(int val0, long val1, String val2, int val3, long val4,
-                             String val5, int val6, long val7, String val8, int val9, long val10) {
-        return new Object[]{val0, val1, val2, val3, val4, val5, val6, val7, val8, val9, val10};
-    }
-
-    public Object[] method12(int val0, long val1, String val2, int val3, long val4,
-                             String val5, int val6, long val7, String val8, int val9, long val10, String val11) {
-        return new Object[]{val0, val1, val2, val3, val4, val5, val6, val7, val8, val9, val10, val11};
-    }
-
-    private Object createInvokerForMethod(String name, Supplier<?>[] suppliers, Class<?>... types) throws Throwable {
-        Method method0 = getClass().getDeclaredMethod(name, types);
-        MethodHandle handle0 = LambdaFactory.create(method0);
-        MethodHandleInvoker methodHandleInvoker = new MethodHandleInvoker(handle0, suppliers);
-        return methodHandleInvoker.invoke();
+    private Object createAndCallLambda(String name, Supplier<?>[] suppliers, Class<?>... types) throws Throwable {
+        Method method = getClass().getDeclaredMethod(name, types);
+        return LambdaFactory.create(method, suppliers).get();
     }
 }

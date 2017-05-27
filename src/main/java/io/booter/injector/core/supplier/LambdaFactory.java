@@ -15,6 +15,7 @@ public class LambdaFactory {
     };
 
     private static final int MAX_CONSTRUCTOR_PARAMETER_COUNT = INTERFACES.length - 1;
+    private static final int MAX_METHOD_PARAMETER_COUNT = MAX_CONSTRUCTOR_PARAMETER_COUNT;
 
     private static Lookup LOOKUP;
 
@@ -39,7 +40,34 @@ public class LambdaFactory {
         }
     }
 
+    /**
+     * Create lambda for the provided method. In the array of parameter suppliers first parameter must be a
+     * supplier of instances of class to which passed method belongs.
+     *
+     * @param method
+     *          Method to convert into labmda
+     * @param suppliers
+     *          Array of suppliers where first element provides instances of method class while remaining
+     *          provide method parameters.
+     *
+     * @return  Created supplier.
+     */
+    public static <T> Supplier<T> create(Method method, Supplier<?>[] suppliers) {
+        if (method == null || suppliers == null || suppliers.length < 1) {
+            throw new InjectorException("Invalid parameters");
+        }
+        try {
+            return internalCreate(method, suppliers);
+        } catch (Throwable  e) {
+            throw new InjectorException("Unable to create lambda for " + method, e);
+        }
+    }
+
     public static <T> Supplier<T> create(Constructor<T> constructor, Supplier<?>[] suppliers) {
+        if (constructor == null || suppliers == null) {
+            throw new InjectorException("Invalid parameters");
+        }
+
         try {
             return internalCreate(constructor, suppliers);
         } catch (Throwable throwable) {
@@ -48,19 +76,29 @@ public class LambdaFactory {
     }
 
     private static <T> Supplier<T> internalCreate(Constructor<T> constructor, Supplier<?>[] suppliers) throws Throwable {
-        if (constructor.getParameterCount() > suppliers.length) {
+        int parameterCount = constructor.getParameterCount();
+
+        if (parameterCount > suppliers.length) {
             throw new InjectorException("Provided less (" + suppliers.length
                                         + ") parameters than required for constructor " + constructor);
         }
 
-        return createSupplier(suppliers,
-                              createCallSite(constructor),
-                              constructor.getParameterCount());
+        return createSupplier(suppliers, createCallSite(constructor, parameterCount), parameterCount);
     }
 
-    private static<T> CallSite createCallSite(Constructor<T> constructor) throws ReflectiveOperationException,
-                                                                           LambdaConversionException {
-        int parameterCount = constructor.getParameterCount();
+    private static <T> Supplier<T> internalCreate(Method method, Supplier<?>[] suppliers) throws Throwable {
+        int parameterCount = method.getParameterCount() + 1;
+
+        if (parameterCount > suppliers.length) {
+            throw new InjectorException("Provided less (" + suppliers.length
+                                        + ") parameters than required for " + method);
+        }
+
+        return createSupplier(suppliers, createCallSite(method, parameterCount), parameterCount);
+    }
+
+    private static CallSite createCallSite(Constructor<?> constructor, int parameterCount)
+            throws ReflectiveOperationException, LambdaConversionException {
 
         if (parameterCount > MAX_CONSTRUCTOR_PARAMETER_COUNT) {
             throw new InjectorException("More than " + MAX_CONSTRUCTOR_PARAMETER_COUNT
@@ -68,6 +106,23 @@ public class LambdaFactory {
         }
 
         MethodHandle target = LOOKUP.unreflectConstructor(constructor);
+
+        return LambdaMetafactory.metafactory(LOOKUP, "invoke",
+                                             MethodType.methodType(INTERFACES[parameterCount]),
+                                             target.type().generic(),
+                                             target,
+                                             target.type());
+    }
+
+    private static CallSite createCallSite(Method method, int parameterCount)
+            throws ReflectiveOperationException, LambdaConversionException {
+
+        if (parameterCount > MAX_METHOD_PARAMETER_COUNT) {
+            throw new InjectorException("More than " + (MAX_METHOD_PARAMETER_COUNT + 1)
+                                        + " parameters are not supported in " + method);
+        }
+
+        MethodHandle target = LOOKUP.unreflect(method);
 
         return LambdaMetafactory.metafactory(LOOKUP, "invoke",
                                              MethodType.methodType(INTERFACES[parameterCount]),
