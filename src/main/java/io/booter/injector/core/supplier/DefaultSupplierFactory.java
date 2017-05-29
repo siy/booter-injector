@@ -2,13 +2,16 @@ package io.booter.injector.core.supplier;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import javax.annotation.PostConstruct;
 
 import io.booter.injector.annotations.ComputationStyle;
 import io.booter.injector.annotations.Singleton;
 import io.booter.injector.core.SupplierFactory;
+import io.booter.injector.core.exception.InjectorException;
 
 public class DefaultSupplierFactory implements SupplierFactory {
     public DefaultSupplierFactory() {
@@ -17,14 +20,17 @@ public class DefaultSupplierFactory implements SupplierFactory {
     @Override
     public <T> Supplier<T> create(Constructor<T> constructor, Supplier<?>[] parameters) {
         Singleton singleton = constructor.getDeclaringClass().getAnnotation(Singleton.class);
-        Supplier<T> instanceSupplier = wrapWithPostConstruct(constructor, LambdaFactory.create(constructor, parameters));
+
+        Supplier<T> instanceSupplier = wrapWithPostConstruct(constructor,
+                                                             new LazyEnhancingSupplier(constructor, parameters));
 
         return wrap(singleton, instanceSupplier);
     }
 
     @Override
     public <T> Supplier<T> createSingleton(Constructor<T> constructor, Supplier<?>[] parameters, boolean eager) {
-        Supplier<T> instanceSupplier = wrapWithPostConstruct(constructor, LambdaFactory.create(constructor, parameters));
+        Supplier<T> instanceSupplier = wrapWithPostConstruct(constructor,
+                                                             new LazyEnhancingSupplier(constructor, parameters));
 
         return buildSingletonSupplier(instanceSupplier, eager);
     }
@@ -79,14 +85,18 @@ public class DefaultSupplierFactory implements SupplierFactory {
     }
 
     private static class InternalLazySupplier<T> implements Supplier<T> {
-        private volatile Supplier<T> instanceSupplier = () -> lazyInstanceCreator();
+        private final Supplier<T> defaultSupplier = () -> lazyInstanceCreator();
+        private volatile Supplier<T> instanceSupplier = defaultSupplier;
         private final Supplier<T> instanceCreator;
 
         private synchronized T lazyInstanceCreator() {
-            if (instanceSupplier instanceof InternalInstanceSupplier) {
+            if (instanceSupplier != defaultSupplier) {
                 return instanceSupplier.get();
             }
-            return (instanceSupplier = new InternalInstanceSupplier<>(instanceCreator.get())).get();
+
+            T instance = instanceCreator.get();
+            instanceSupplier = () -> instance;
+            return instance;
         }
 
         InternalLazySupplier(Supplier<T> instanceCreator) {
@@ -96,6 +106,63 @@ public class DefaultSupplierFactory implements SupplierFactory {
         @Override
         public T get() {
             return instanceSupplier.get();
+        }
+    }
+
+    private class ConstructingSupplier<T> implements Supplier<T> {
+        protected final Constructor<T> constructor;
+        protected final Supplier<?>[] parameters;
+
+        private ConstructingSupplier(Constructor<T> constructor, Supplier<?>[] parameters) {
+            this.constructor = constructor;
+            this.parameters = parameters;
+        }
+
+        private T createInstance() {
+            try {
+                Object[] values = new Object[constructor.getParameterCount()];
+                for (int i = 0; i < values.length; i++) {
+                    values[i] = parameters[i].get();
+                }
+
+                return constructor.newInstance(values);
+            } catch (Exception e) {
+                throw new InjectorException("Unable to create instance. Calling " + constructor);
+            }
+        }
+        @Override
+        public T get() {
+            return createInstance();
+        }
+    }
+
+    private class LazyEnhancingSupplier<T> extends ConstructingSupplier<T> {
+        private static final int TRESHOLD = 3;
+
+        private final AtomicInteger counter = new AtomicInteger();
+        private final Supplier<T> defaultSupplier = () -> create();
+        private volatile Supplier<T> supplier = defaultSupplier;
+
+        private T create() {
+            if (counter.incrementAndGet() < TRESHOLD) {
+                return super.get();
+            }
+
+            synchronized (defaultSupplier) {
+                if (supplier == defaultSupplier) {
+                    supplier = LambdaFactory.create(constructor, parameters);
+                }
+            }
+            return supplier.get();
+        }
+
+        public LazyEnhancingSupplier(Constructor<T> constructor, Supplier<?>[] parameters) {
+            super(constructor, parameters);
+        }
+
+        @Override
+        public T get() {
+            return supplier.get();
         }
     }
 }

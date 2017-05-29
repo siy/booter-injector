@@ -140,24 +140,24 @@ public class LazyInjector implements Injector {
     }
 
     private Supplier<?>[] collectParameterSuppliers(Executable executable) {
-//        int i = 0;
-//        Supplier<?>[] suppliers = new Supplier[executable.getParameterCount()];
-//
-//        for(Parameter p : executable.getParameters()) {
-//            suppliers[i++] = lookupSupplier(Key.of(p));
-//        }
-//
-//        return suppliers;
-        return Arrays.stream(executable.getParameters())
-              .map(parameter -> ForkJoinPool.commonPool().submit(() -> lookupSupplier(Key.of(parameter))))
-              .map(f -> {
-                  try {
-                      return f.get();
-                  } catch (Exception e) {
-                      throw new InjectorException("Error while obtaining supplier");
-                  }
-              })
-              .toArray(Supplier<?>[]::new);
+        int i = 0;
+        Supplier<?>[] suppliers = new Supplier[executable.getParameterCount()];
+
+        for(Parameter p : executable.getParameters()) {
+            suppliers[i++] = lookupSupplier(Key.of(p));
+        }
+
+        return suppliers;
+//        return Arrays.stream(executable.getParameters())
+//              .map(parameter -> ForkJoinPool.commonPool().submit(() -> lookupSupplier(Key.of(parameter))))
+//              .map(f -> {
+//                  try {
+//                      return f.get();
+//                  } catch (Exception e) {
+//                      throw new InjectorException("Error while obtaining supplier");
+//                  }
+//              })
+//              .toArray(Supplier<?>[]::new);
     }
 
     private Supplier<?> lookupSupplier(Key parameterKey) {
