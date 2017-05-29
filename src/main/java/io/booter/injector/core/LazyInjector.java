@@ -4,6 +4,8 @@ import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
 
 import io.booter.injector.Injector;
@@ -48,8 +50,7 @@ public class LazyInjector implements Injector {
     @SuppressWarnings("unchecked")
     @Override
     public <T> Supplier<T> supplier(Key key) {
-        return (Supplier<T>) bindings.computeIfAbsent(key,
-                                                      (k) -> new PlaceholderSupplier<>(this, k));
+        return (Supplier<T>) bindings.computeIfAbsent(key, (k) -> new PlaceholderSupplier<>(this, k));
     }
 
     @SuppressWarnings("unchecked")
@@ -81,7 +82,8 @@ public class LazyInjector implements Injector {
     <T> Supplier<T> collectBindings(Key key) {
         Constructor<?> constructor = locateConstructorAndConfigure(key);
 
-        return (Supplier<T>) factory.create(constructor, collectParameterSuppliers(constructor));
+        return (Supplier<T>) factory.create(constructor,
+                                            collectParameterSuppliers(constructor));
     }
 
     private Constructor<?> locateConstructorAndConfigure(Key key) {
@@ -137,15 +139,35 @@ public class LazyInjector implements Injector {
         return invocationParameters;
     }
 
-    private Supplier<?>[] collectParameterSuppliers(Executable instanceConstructor) {
-        return Arrays.stream(instanceConstructor.getParameters())
-                     .map(p -> Key.of(p))
-                     .map(k -> lookupSupplier(k))
-                     .toArray(Supplier[]::new);
+    private Supplier<?>[] collectParameterSuppliers(Executable executable) {
+//        int i = 0;
+//        Supplier<?>[] suppliers = new Supplier[executable.getParameterCount()];
+//
+//        for(Parameter p : executable.getParameters()) {
+//            suppliers[i++] = lookupSupplier(Key.of(p));
+//        }
+//
+//        return suppliers;
+        return Arrays.stream(executable.getParameters())
+              .map(parameter -> ForkJoinPool.commonPool().submit(() -> lookupSupplier(Key.of(parameter))))
+              .map(f -> {
+                  try {
+                      return f.get();
+                  } catch (Exception e) {
+                      throw new InjectorException("Error while obtaining supplier");
+                  }
+              })
+              .toArray(Supplier<?>[]::new);
     }
 
     private Supplier<?> lookupSupplier(Key parameterKey) {
         Supplier<?> supplier = supplier(parameterKey);
+
+        //TODO: detect cycle!!!
+//        if (!parameterKey.isSupplier() && supplier instanceof PlaceholderSupplier && !((PlaceholderSupplier) supplier).isResolved()) {
+//            throw new InjectorException("Cycle is detected while locating " + parameterKey);
+//        }
+
         return parameterKey.isSupplier() ? () -> supplier : supplier;
     }
 
@@ -169,7 +191,7 @@ public class LazyInjector implements Injector {
 
         //Note that we intentionally loop through all constructors even when required one is found.
         //This is necessary for checking of multiple constructors annotated with @Inject
-        for (Constructor<?> constructor : clazz.getConstructors()) {
+        for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
             if (!Modifier.isPublic(constructor.getModifiers())) {
                 continue;
             }

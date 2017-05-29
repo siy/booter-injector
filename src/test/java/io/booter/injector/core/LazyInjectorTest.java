@@ -9,9 +9,8 @@ import javax.annotation.PostConstruct;
 import io.booter.injector.Injector;
 import io.booter.injector.annotations.Inject;
 import io.booter.injector.annotations.Singleton;
-import io.booter.injector.core.beans.Bar;
-import io.booter.injector.core.beans.Ber;
 import io.booter.injector.core.exception.InjectorException;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -153,6 +152,11 @@ public class LazyInjectorTest {
 
         public Supplier<Foo> parent() {
             return parent;
+        }
+    }
+
+    public static class Ber {
+        public Ber() {
         }
     }
 
