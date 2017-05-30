@@ -1,2 +1,2 @@
-# booter-di
+# booter-injector
 Fast dependency injection library
