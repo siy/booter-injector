@@ -1,5 +1,5 @@
 package io.booter.injector;
 
-public interface InjectorConfig {
+public interface Module {
     void configure(Injector injector);
 }

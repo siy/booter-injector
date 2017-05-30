@@ -1,15 +1,12 @@
 package io.booter.injector.core;
 
 import java.lang.reflect.*;
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
 
 import io.booter.injector.Injector;
-import io.booter.injector.InjectorConfig;
+import io.booter.injector.Module;
 import io.booter.injector.annotations.ConfiguredBy;
 import io.booter.injector.annotations.ImplementedBy;
 import io.booter.injector.annotations.Inject;
@@ -18,15 +15,15 @@ import io.booter.injector.core.exception.InjectorException;
 import io.booter.injector.core.supplier.DefaultSupplierFactory;
 import io.booter.injector.core.supplier.LambdaFactory;
 
-public class LazyInjector implements Injector {
+public class FastInjector implements Injector {
     private final ConcurrentMap<Key, Supplier<?>> bindings = new ConcurrentHashMap<>();
     private final SupplierFactory factory;
 
-    public LazyInjector() {
+    public FastInjector() {
         this(new DefaultSupplierFactory());
     }
 
-    public LazyInjector(SupplierFactory factory) {
+    public FastInjector(SupplierFactory factory) {
         this.factory = factory;
         bindings.put(Key.of(Injector.class), () -> this);
     }
@@ -56,37 +53,36 @@ public class LazyInjector implements Injector {
     @SuppressWarnings("unchecked")
     @Override
     public <T> Injector bind(Key key, Supplier<T> supplier, boolean throwIfExists) {
-        return verifyAdded(key, throwIfExists, bindings.putIfAbsent(key, supplier));
+        return checkForExistingBinding(key, throwIfExists, bindings.putIfAbsent(key, supplier));
     }
 
     @Override
     public <T> Injector bind(Key key, Class<T> implementation, boolean throwIfExists) {
         Supplier<?> supplier = supplier(Key.of(implementation));
-        return verifyAdded(key, throwIfExists, bindings.putIfAbsent(key, supplier));
+        return checkForExistingBinding(key, throwIfExists, bindings.putIfAbsent(key, supplier));
     }
 
     @Override
     public <T> Injector bindSingleton(Key key, Class<T> implementation, boolean eager, boolean throwIfExists) {
-        Constructor<T> constructor = (Constructor<T>) locateConstructorAndConfigure(Key.of(implementation));
+        Constructor<T> constructor = (Constructor<T>) locateConstructorAndConfigureInjector(Key.of(implementation));
         Supplier<T> supplier = factory.createSingleton(constructor, collectParameterSuppliers(constructor), eager);
 
-        return verifyAdded(key, throwIfExists, bindings.putIfAbsent(key, supplier));
+        return checkForExistingBinding(key, throwIfExists, bindings.putIfAbsent(key, supplier));
     }
 
     @Override
     public <T> Injector bind(Key key, T implementation, boolean throwIfExists) {
-        return verifyAdded(key, throwIfExists, bindings.putIfAbsent(key, () -> implementation));
+        return checkForExistingBinding(key, throwIfExists, bindings.putIfAbsent(key, () -> implementation));
     }
 
     @SuppressWarnings("unchecked")
     <T> Supplier<T> collectBindings(Key key) {
-        Constructor<?> constructor = locateConstructorAndConfigure(key);
+        Constructor<?> constructor = locateConstructorAndConfigureInjector(key);
 
-        return (Supplier<T>) factory.create(constructor,
-                                            collectParameterSuppliers(constructor));
+        return (Supplier<T>) factory.create(constructor, collectParameterSuppliers(constructor));
     }
 
-    private Constructor<?> locateConstructorAndConfigure(Key key) {
+    private Constructor<?> locateConstructorAndConfigureInjector(Key key) {
         Constructor<?> constructor = locateConstructor(key);
 
         ConfiguredBy configuredBy = constructor.getDeclaringClass().getAnnotation(ConfiguredBy.class);
@@ -98,7 +94,7 @@ public class LazyInjector implements Injector {
         return constructor;
     }
 
-    private <T> Injector verifyAdded(Key key, boolean throwIfExists, Supplier<T> existing) {
+    private <T> Injector checkForExistingBinding(Key key, boolean throwIfExists, Supplier<T> existing) {
         if (throwIfExists && existing != null) {
             throw new InjectorException("Binding for " + key + " already exists");
         }
@@ -117,8 +113,8 @@ public class LazyInjector implements Injector {
             }
         }
 
-        if (clazz.isAssignableFrom(InjectorConfig.class)) {
-            ((InjectorConfig) configSupplier.get()).configure(this);
+        if (clazz.isAssignableFrom(Module.class)) {
+            ((Module) configSupplier.get()).configure(this);
         }
     }
 
@@ -144,29 +140,14 @@ public class LazyInjector implements Injector {
         Supplier<?>[] suppliers = new Supplier[executable.getParameterCount()];
 
         for(Parameter p : executable.getParameters()) {
-            suppliers[i++] = lookupSupplier(Key.of(p));
+            suppliers[i++] = lookupParameterSupplier(Key.of(p));
         }
 
         return suppliers;
-//        return Arrays.stream(executable.getParameters())
-//              .map(parameter -> ForkJoinPool.commonPool().submit(() -> lookupSupplier(Key.of(parameter))))
-//              .map(f -> {
-//                  try {
-//                      return f.get();
-//                  } catch (Exception e) {
-//                      throw new InjectorException("Error while obtaining supplier");
-//                  }
-//              })
-//              .toArray(Supplier<?>[]::new);
     }
 
-    private Supplier<?> lookupSupplier(Key parameterKey) {
+    private Supplier<?> lookupParameterSupplier(Key parameterKey) {
         Supplier<?> supplier = supplier(parameterKey);
-
-        //TODO: detect cycle!!!
-//        if (!parameterKey.isSupplier() && supplier instanceof PlaceholderSupplier && !((PlaceholderSupplier) supplier).isResolved()) {
-//            throw new InjectorException("Cycle is detected while locating " + parameterKey);
-//        }
 
         return parameterKey.isSupplier() ? () -> supplier : supplier;
     }
@@ -189,8 +170,6 @@ public class LazyInjector implements Injector {
         Constructor<?> singleConstructor = null;
         boolean singleConstructorIsPending = true;
 
-        //Note that we intentionally loop through all constructors even when required one is found.
-        //This is necessary for checking of multiple constructors annotated with @Inject
         for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
             if (!Modifier.isPublic(constructor.getModifiers())) {
                 continue;

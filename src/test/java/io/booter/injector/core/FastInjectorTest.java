@@ -10,15 +10,14 @@ import io.booter.injector.Injector;
 import io.booter.injector.annotations.Inject;
 import io.booter.injector.annotations.Singleton;
 import io.booter.injector.core.exception.InjectorException;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class LazyInjectorTest {
+public class FastInjectorTest {
     @Test
     public void shouldLocateAnnotatedConstructor() throws Exception {
-        Constructor<?> result = LazyInjector.locateConstructor(Key.of(AnnotatedConstructorClass.class));
+        Constructor<?> result = FastInjector.locateConstructor(Key.of(AnnotatedConstructorClass.class));
 
         assertThat(result).isNotNull();
         assertThat(result.isAnnotationPresent(Inject.class)).isTrue();
@@ -26,7 +25,7 @@ public class LazyInjectorTest {
 
     @Test
     public void shouldLocateDefaultConstructor() throws Exception {
-        Constructor<?> result = LazyInjector.locateConstructor(Key.of(DefaultConstructorClass.class));
+        Constructor<?> result = FastInjector.locateConstructor(Key.of(DefaultConstructorClass.class));
 
         assertThat(result).isNotNull();
         assertThat(result.getParameterCount()).isEqualTo(0);
@@ -34,7 +33,7 @@ public class LazyInjectorTest {
 
     @Test
     public void shouldLocateSingleConstructor() throws Exception {
-        Constructor<?> result = LazyInjector.locateConstructor(Key.of(SingleConstructorClass.class));
+        Constructor<?> result = FastInjector.locateConstructor(Key.of(SingleConstructorClass.class));
 
         assertThat(result).isNotNull();
         assertThat(result.getParameterCount()).isEqualTo(1);
@@ -42,12 +41,12 @@ public class LazyInjectorTest {
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionWhenMultipleNonDefaultConstructorsAreEncountered() throws Exception {
-        LazyInjector.locateConstructor(Key.of(MultipleConstructorClass.class));
+        FastInjector.locateConstructor(Key.of(MultipleConstructorClass.class));
     }
 
     @Test
     public void shouldBuildSimpleHierarchyAndCreateInstance() throws Exception {
-        Injector injector = new LazyInjector();
+        Injector injector = new FastInjector();
         Foo instance = injector.get(Foo.class);
 
         assertThat(instance).isNotNull();
@@ -61,7 +60,7 @@ public class LazyInjectorTest {
 
     @Test
     public void shouldInsertSupplierDependency() throws Exception {
-        Injector injector = new LazyInjector();
+        Injector injector = new FastInjector();
         BeanWithSupplierDependency instance = injector.get(BeanWithSupplierDependency.class);
 
         assertThat(instance).isNotNull();
@@ -73,7 +72,7 @@ public class LazyInjectorTest {
 
     @Test
     public void shouldCallPostConstruct() throws Exception {
-        Injector injector = new LazyInjector();
+        Injector injector = new FastInjector();
         BeanWithPostConstruct instance = injector.get(BeanWithPostConstruct.class);
 
         assertThat(instance).isNotNull();

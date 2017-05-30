@@ -1,10 +1,9 @@
 package io.booter.injector.core;
 
-import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.function.Supplier;
 
 class PlaceholderSupplier<T> implements Supplier<T> {
-    private final LazyInjector injector;
+    private final FastInjector injector;
     private final Key key;
     private final Supplier<T> defaultDelegate = () -> bindParameters();
     private Supplier<T> delegate = defaultDelegate;
@@ -13,7 +12,7 @@ class PlaceholderSupplier<T> implements Supplier<T> {
         return delegate().get();
     }
 
-    public PlaceholderSupplier(LazyInjector injector, Key key) {
+    public PlaceholderSupplier(FastInjector injector, Key key) {
         this.injector = injector;
         this.key = key;
     }

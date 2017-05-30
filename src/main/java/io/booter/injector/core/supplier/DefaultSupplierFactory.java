@@ -2,7 +2,6 @@ package io.booter.injector.core.supplier;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -19,23 +18,21 @@ public class DefaultSupplierFactory implements SupplierFactory {
 
     @Override
     public <T> Supplier<T> create(Constructor<T> constructor, Supplier<?>[] parameters) {
-        Singleton singleton = constructor.getDeclaringClass().getAnnotation(Singleton.class);
+        Supplier<T> instanceSupplier = tryWrapWithPostConstruct(constructor,
+                                                                new LazyEnhancingSupplier(constructor, parameters));
 
-        Supplier<T> instanceSupplier = wrapWithPostConstruct(constructor,
-                                                             new LazyEnhancingSupplier(constructor, parameters));
-
-        return wrap(singleton, instanceSupplier);
+        return tryBuildSingleton(instanceSupplier, constructor.getDeclaringClass());
     }
 
     @Override
     public <T> Supplier<T> createSingleton(Constructor<T> constructor, Supplier<?>[] parameters, boolean eager) {
-        Supplier<T> instanceSupplier = wrapWithPostConstruct(constructor,
-                                                             new LazyEnhancingSupplier(constructor, parameters));
+        Supplier<T> instanceSupplier = tryWrapWithPostConstruct(constructor,
+                                                                new LazyEnhancingSupplier(constructor, parameters));
 
         return buildSingletonSupplier(instanceSupplier, eager);
     }
 
-    private <T> Supplier<T> wrapWithPostConstruct(Constructor<T> constructor, Supplier<T> instanceSupplier) {
+    private <T> Supplier<T> tryWrapWithPostConstruct(Constructor<T> constructor, Supplier<T> instanceSupplier) {
         MethodHandle methodHandle = locatePostConstructMethod(constructor.getDeclaringClass());
 
         if (methodHandle != null) {
@@ -45,7 +42,6 @@ public class DefaultSupplierFactory implements SupplierFactory {
     }
 
     private <T> MethodHandle locatePostConstructMethod(Class<T> declaringClass) {
-
         for (Method method: declaringClass.getDeclaredMethods()) {
             if (method.isAnnotationPresent(PostConstruct.class)) {
                 return LambdaFactory.create(method);
@@ -54,7 +50,9 @@ public class DefaultSupplierFactory implements SupplierFactory {
         return null;
     }
 
-    private <T> Supplier<T> wrap(Singleton singleton, Supplier<T> instanceSupplier) {
+    private <T> Supplier<T> tryBuildSingleton(Supplier<T> instanceSupplier, Class<?> clazz) {
+        Singleton singleton = clazz.getAnnotation(Singleton.class);
+
         if (singleton == null) {
             return instanceSupplier;
         }
@@ -68,19 +66,6 @@ public class DefaultSupplierFactory implements SupplierFactory {
             return () -> instance;
         } else {
             return new InternalLazySupplier<>(instanceSupplier);
-        }
-    }
-
-    private static class InternalInstanceSupplier<T> implements Supplier<T> {
-        private final T instance;
-
-        InternalInstanceSupplier(T instance) {
-            this.instance = instance;
-        }
-
-        @Override
-        public T get() {
-            return instance;
         }
     }
 

@@ -10,9 +10,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -42,67 +40,76 @@ class AnnotationInvocationHandler implements Annotation, InvocationHandler, Seri
     /**
      * Maps primitive {@code Class}es to their corresponding wrapper {@code Class}.
      */
-    private static final Map<Class<?>, Class<?>> primitiveWrapperMap = new HashMap<>();
+    private static final Map<Class<?>, Class<?>> PRIMITIVE_WRAPPERS = new HashMap<>();
 
     static {
-        primitiveWrapperMap.put(Boolean.TYPE, Boolean.class);
-        primitiveWrapperMap.put(Byte.TYPE, Byte.class);
-        primitiveWrapperMap.put(Character.TYPE, Character.class);
-        primitiveWrapperMap.put(Short.TYPE, Short.class);
-        primitiveWrapperMap.put(Integer.TYPE, Integer.class);
-        primitiveWrapperMap.put(Long.TYPE, Long.class);
-        primitiveWrapperMap.put(Double.TYPE, Double.class);
-        primitiveWrapperMap.put(Float.TYPE, Float.class);
+        PRIMITIVE_WRAPPERS.put(Boolean.TYPE, Boolean.class);
+        PRIMITIVE_WRAPPERS.put(Byte.TYPE, Byte.class);
+        PRIMITIVE_WRAPPERS.put(Character.TYPE, Character.class);
+        PRIMITIVE_WRAPPERS.put(Short.TYPE, Short.class);
+        PRIMITIVE_WRAPPERS.put(Integer.TYPE, Integer.class);
+        PRIMITIVE_WRAPPERS.put(Long.TYPE, Long.class);
+        PRIMITIVE_WRAPPERS.put(Double.TYPE, Double.class);
+        PRIMITIVE_WRAPPERS.put(Float.TYPE, Float.class);
     }
 
     private final Class<? extends Annotation> annotationType;
     private final Map<String, Object> values;
     private final int hashCode;
+    private volatile String stringValue;
 
-    AnnotationInvocationHandler(Class<? extends Annotation> annotationType, Map<String, Object> values) throws
-                                                                                                        InjectorException {
-        Class[] interfaces = annotationType.getInterfaces();
-        if (annotationType.isAnnotation() && interfaces.length == 1 && interfaces[0] == Annotation.class) {
-            this.annotationType = annotationType;
-            this.values = Collections.unmodifiableMap(normalize(annotationType, values));
-            this.hashCode = calculateHashCode();
-        } else {
-            throw new InjectorException(annotationType.getName() + " is not an annotation type");
-        }
+    AnnotationInvocationHandler(Class<? extends Annotation> annotationType, Map<String, Object> values)
+            throws  InjectorException {
+        this.annotationType = validateType(annotationType);
+        this.values = normalize(annotationType, values);
+        this.hashCode = calculateHashCode();
     }
 
-    static Map<String, Object> normalize(Class<? extends Annotation> annotationType, Map<String, Object> values) throws InjectorException {
-        Set<String> missing = new HashSet<>();
-        Set<String> invalid = new HashSet<>();
-        Map<String, Object> valid = new HashMap<>();
-        for (Method element : annotationType.getDeclaredMethods()) {
-            String elementName = element.getName();
-            if (values.containsKey(elementName)) {
-                Class<?> returnType = element.getReturnType();
-                if (returnType.isPrimitive()) {
-                    returnType = primitiveWrapperMap.get(returnType);
-                }
+    private static Class<? extends Annotation> validateType(Class<? extends Annotation> annotationType) {
+        Class[] interfaces = annotationType.getInterfaces();
 
-                if (returnType.isInstance(values.get(elementName))) {
-                    valid.put(elementName, values.get(elementName));
-                } else {
-                    invalid.add(elementName);
-                }
-            } else {
-                if (element.getDefaultValue() != null) {
-                    valid.put(elementName, element.getDefaultValue());
-                } else {
-                    missing.add(elementName);
-                }
-            }
+        if (!annotationType.isAnnotation() || interfaces.length != 1 || interfaces[0] != Annotation.class) {
+            throw new InjectorException(annotationType.getName() + " is not an annotation type");
         }
-        if (!missing.isEmpty()) {
-            throw new InjectorException("Missing value(s) for " + String.join(",", missing));
+        return annotationType;
+    }
+
+    private static Map<String, Object> normalize(Class<? extends Annotation> annotationType,
+                                                 Map<String, Object> values)
+            throws InjectorException {
+
+        Map<String, Object> result = new HashMap<>();
+
+        for (Method method : annotationType.getDeclaredMethods()) {
+            Object value = calculateValue(values, method);
+            validateReturnType(method, value);
+            result.put(method.getName(), value);
         }
-        if (!invalid.isEmpty()) {
-            throw new InjectorException("Incompatible type(s) provided for " + String.join(",", invalid));
+
+        return result;
+    }
+
+    private static Object calculateValue(Map<String, Object> values, Method method) {
+        Object value = values.containsValue(method.getName()) ? values.get(method.getName())
+                                                              : method.getDefaultValue();
+
+        if (value == null) {
+            throw new InjectorException("Missing value for " + method);
         }
-        return valid;
+
+        return value;
+    }
+
+    private static void validateReturnType(Method method, Object value) {
+        Class<?> returnType = method.getReturnType();
+
+        if (returnType.isPrimitive()) {
+            returnType = PRIMITIVE_WRAPPERS.get(returnType);
+        }
+
+        if (!returnType.isInstance(value)) {
+            throw new InjectorException("Incompatible type provided for " + method);
+        }
     }
 
     @Override
@@ -140,11 +147,11 @@ class AnnotationInvocationHandler implements Annotation, InvocationHandler, Seri
         Annotation that = annotationType.cast(other);
 
         //compare annotation member values
-        for (Entry<String, Object> element : values.entrySet()) {
-            Object value = element.getValue();
+        for (Entry<String, Object> entry : values.entrySet()) {
+            Object value = entry.getValue();
             Object otherValue;
             try {
-                otherValue = that.annotationType().getMethod(element.getKey()).invoke(that);
+                otherValue = that.annotationType().getMethod(entry.getKey()).invoke(that);
             } catch (ReflectiveOperationException e) {
                 throw new RuntimeException(e);
             }
@@ -170,29 +177,29 @@ class AnnotationInvocationHandler implements Annotation, InvocationHandler, Seri
 
     @Override
     public String toString() {
-        StringBuilder result = new StringBuilder();
-        result.append('@').append(annotationType.getName()).append('(');
-        Set<String> sorted = new TreeSet<>(values.keySet());
-        for (String elementName : sorted) {
-            String value;
-            if (values.get(elementName).getClass().isArray()) {
-                value = Arrays.deepToString(new Object[] {values.get(elementName)})
-                              .replaceAll("^\\[\\[", "[")
-                              .replaceAll("]]$", "]");
-            } else {
-                value = values.get(elementName).toString();
+        if (stringValue == null) {
+            synchronized (this) {
+                if (stringValue == null) {
+                    stringValue = calculateToStringValue();
+                }
             }
-            result.append(elementName).append('=').append(value).append(", ");
         }
-        // remove the trailing separator
-        if (values.size() > 0) {
-            result.delete(result.length() - 2, result.length());
-        }
-        result.append(")");
-
-        return result.toString();
+        return stringValue;
     }
 
+    private String calculateToStringValue() {
+        StringBuilder result = new StringBuilder().append('@').append(annotationType.getName()).append('(');
+
+        for (String name : new TreeSet<>(values.keySet())) {
+            result.append(name).append('=').append(values.get(name).toString()).append(", ");
+        }
+
+        if (!values.isEmpty()) {
+            result.delete(result.length() - 2, result.length());
+        }
+
+        return result.append(")").toString();
+    }
 
     private int calculateHashCode() {
         int hashCode = 0;

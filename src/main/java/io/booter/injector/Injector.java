@@ -3,7 +3,7 @@ package io.booter.injector;
 import java.util.function.Supplier;
 
 import io.booter.injector.core.Key;
-import io.booter.injector.core.LazyInjector;
+import io.booter.injector.core.FastInjector;
 
 public interface Injector {
     <T> T get(Class<T> clazz);
@@ -23,6 +23,6 @@ public interface Injector {
     <T> Injector bind(Key key, T implementation, boolean throwIfExists);
 
     static Injector create() {
-        return new LazyInjector();
+        return new FastInjector();
     }
 }

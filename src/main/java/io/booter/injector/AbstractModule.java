@@ -3,13 +3,9 @@ package io.booter.injector;
 import java.lang.annotation.Annotation;
 import java.util.function.Supplier;
 
-import io.booter.injector.Injector;
-import io.booter.injector.InjectorConfig;
-import io.booter.injector.TypeToken;
-import io.booter.injector.core.AnnotationFactory;
 import io.booter.injector.core.Key;
 
-public abstract class AbstractInjectorConfig implements InjectorConfig {
+public abstract class AbstractModule implements Module {
     private Injector injector;
 
     @Override
@@ -36,7 +32,7 @@ public abstract class AbstractInjectorConfig implements InjectorConfig {
         }
 
         public Builder<T> annotatedWith(Class<? extends Annotation> annotation) {
-            key = Key.of(key, annotation);
+            key = key.with(annotation);
             return this;
         }
 

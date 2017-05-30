@@ -14,26 +14,24 @@ public class Key {
     private final Annotation annotation;
     private final Type type;
     private final Class<?> clazz;
-    private final boolean isSupplier;
+    private final boolean supplier;
 
-    private Key(Type type, boolean isSupplier, Annotation... annotations) {
-        this(type, isSupplier, failIfNull(lookupClass(type), type), findBindingAnnotation(annotations));
+    private Key(Type type, boolean supplier, Annotation... annotations) {
+        this(type, supplier, failIfNull(lookupClass(type), type), findBindingAnnotation(annotations));
     }
 
-    private Key(Type type, boolean isSupplier) {
-        this(type, isSupplier, failIfNull(lookupClass(type), type), null);
+    private Key(Type type, boolean supplier) {
+        this(type, supplier, failIfNull(lookupClass(type), type), null);
     }
 
-    private Key(Type type, boolean isSupplier, Class<?> clazz, Annotation annotation) {
+    private Key(Type type, boolean supplier, Class<?> clazz, Annotation annotation) {
         this.type = type;
         this.clazz = clazz;
         this.annotation = annotation;
-        this.isSupplier = isSupplier;
+        this.supplier = supplier;
     }
 
     public static Key of(Parameter parameter) {
-        //Note that this check limits parameter type exactly to Supplier class.
-        //Opposite order would allow all derived classes to be accepted which is not feasible.
         if (!parameter.getType().isAssignableFrom(Supplier.class)) {
             return new Key(parameter.getParameterizedType(), false, parameter.getAnnotations());
         }
@@ -44,7 +42,7 @@ public class Key {
             Type[] args = ((ParameterizedType) type).getActualTypeArguments();
 
             if (args.length > 0 && args[0] instanceof Class) {
-                return Key.of(args[0], true);
+                return Key.of(args[0], true, parameter.getAnnotations());
             }
         }
 
@@ -67,17 +65,6 @@ public class Key {
         return new Key(token.type(), false);
     }
 
-    public static <A extends Annotation> Key of(Key key, Class<A> annotation) {
-        if (!annotation.isAnnotationPresent(BindingAnnotation.class)) {
-            throw new InjectorException("Annotation "
-                                        + annotation.getSimpleName()
-                                        + " must be annotated with @"
-                                        + BindingAnnotation.class.getSimpleName());
-        }
-
-        return new Key(key.type(), key.isSupplier(), key.rawClass(), AnnotationFactory.create(annotation));
-    }
-
     @Override
     public int hashCode() {
         return type.hashCode() ^ (annotation == null ? 0x55555555: annotation.hashCode());
@@ -87,6 +74,10 @@ public class Key {
     public boolean equals(Object obj) {
         if (!(obj instanceof Key)) {
             return false;
+        }
+
+        if (this == obj) {
+            return true;
         }
 
         Key key = (Key) obj;
@@ -106,7 +97,18 @@ public class Key {
     }
 
     public boolean isSupplier() {
-        return isSupplier;
+        return supplier;
+    }
+
+    public Key with(Class<? extends Annotation> annotation) {
+        if (!annotation.isAnnotationPresent(BindingAnnotation.class)) {
+            throw new InjectorException("Annotation "
+                                        + annotation.getSimpleName()
+                                        + " must be annotated with @"
+                                        + BindingAnnotation.class.getSimpleName());
+        }
+
+        return new Key(type, supplier, clazz, AnnotationFactory.create(annotation));
     }
 
     @Override
