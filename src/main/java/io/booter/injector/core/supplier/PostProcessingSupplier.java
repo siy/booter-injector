@@ -5,14 +5,16 @@ import java.util.function.Supplier;
 
 import io.booter.injector.core.exception.InjectorException;
 
-public class PostConstructInvokingSupplier<T> implements Supplier<T> {
+public class PostProcessingSupplier<T> implements Supplier<T> {
 
     private final Supplier<T> instanceSupplier;
     private final MethodHandle methodHandle;
+    private final String message;
 
-    PostConstructInvokingSupplier(Supplier<T> instanceSupplier, MethodHandle methodHandle) {
+    PostProcessingSupplier(Supplier<T> instanceSupplier, MethodHandle methodHandle, String message) {
         this.instanceSupplier = instanceSupplier;
         this.methodHandle = methodHandle;
+        this.message = message;
     }
 
     @Override
@@ -22,7 +24,7 @@ public class PostConstructInvokingSupplier<T> implements Supplier<T> {
         try {
             methodHandle.invoke(instance);
         } catch (Throwable throwable) {
-            throw new InjectorException("Error while invoking @PostConstruct method", throwable);
+            throw new InjectorException(message, throwable);
         }
 
         return instance;

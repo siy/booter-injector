@@ -1,9 +1,12 @@
 package io.booter.injector.core.supplier;
 
+import java.lang.annotation.Annotation;
 import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.*;
 import java.util.function.Supplier;
+
+import javax.annotation.PostConstruct;
 
 import io.booter.injector.core.exception.InjectorException;
 
@@ -30,6 +33,15 @@ public class LambdaFactory {
         } catch (Exception e) {
             throw new InjectorException("Unable to create new MethodHandles.Lookup instance", e);
         }
+    }
+
+    public static MethodHandle locateAnnotated(Class<?> declaringClass, Class<? extends Annotation> annotation) {
+        for (Method method: declaringClass.getDeclaredMethods()) {
+            if (method.isAnnotationPresent(annotation)) {
+                return LambdaFactory.create(method);
+            }
+        }
+        return null;
     }
 
     public static MethodHandle create(Method method) {
@@ -131,6 +143,7 @@ public class LambdaFactory {
                                              target.type());
     }
 
+    @SuppressWarnings("unchecked")
     private static<T> Supplier<T> createSupplier(Supplier<?>[] suppliers, CallSite callSite, int parameterCount) throws Throwable {
         switch (parameterCount) {
             case 0: {

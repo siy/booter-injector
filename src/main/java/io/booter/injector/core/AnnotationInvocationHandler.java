@@ -32,6 +32,8 @@ import io.booter.injector.core.exception.InjectorException;
  * Note: {@link #equals(Object)} and {@link #hashCode()} and implemented as specified
  * by {@link Annotation}, so instances are safe to mix with normal annotations.
  *
+ * Modified version of AnnotationInvocationHandler from https://github.com/leangen/geantyref
+ *
  * @see Annotation
  */
 class AnnotationInvocationHandler implements Annotation, InvocationHandler, Serializable {
