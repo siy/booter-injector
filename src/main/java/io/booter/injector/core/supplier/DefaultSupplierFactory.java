@@ -9,6 +9,8 @@ import io.booter.injector.annotations.ComputationStyle;
 import io.booter.injector.annotations.Singleton;
 import io.booter.injector.core.SupplierFactory;
 
+import static io.booter.injector.core.supplier.Suppliers.*;
+
 public class DefaultSupplierFactory implements SupplierFactory {
     public DefaultSupplierFactory() {
     }
@@ -16,7 +18,8 @@ public class DefaultSupplierFactory implements SupplierFactory {
     @Override
     public <T> Supplier<T> create(Constructor<T> constructor, Supplier<?>[] parameters) {
         Supplier<T> factory = tryWrapWithPostConstruct(constructor,
-                                                       Suppliers.enhancingConstructor(constructor, parameters));
+                                                       enhancing(constructor(constructor, parameters),
+                                                                 () -> fastConstructor(constructor, parameters)));
 
         return tryBuildSingleton(factory, constructor.getDeclaringClass());
     }
@@ -24,9 +27,9 @@ public class DefaultSupplierFactory implements SupplierFactory {
     @Override
     public <T> Supplier<T> createSingleton(Constructor<T> constructor, Supplier<?>[] parameters, boolean eager) {
         Supplier<T> factory = tryWrapWithPostConstruct(constructor,
-                                                       Suppliers.constructor(constructor, parameters));
+                                                       constructor(constructor, parameters));
 
-        return Suppliers.singleton(factory, eager);
+        return singleton(factory, eager);
     }
 
     private <T> Supplier<T> tryWrapWithPostConstruct(Constructor<T> constructor, Supplier<T> factory) {
@@ -45,6 +48,6 @@ public class DefaultSupplierFactory implements SupplierFactory {
             return instanceSupplier;
         }
 
-        return Suppliers.singleton(instanceSupplier, singleton.value() == ComputationStyle.EAGER);
+        return singleton(instanceSupplier, singleton.value() == ComputationStyle.EAGER);
     }
 }

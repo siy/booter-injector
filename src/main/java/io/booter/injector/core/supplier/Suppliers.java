@@ -1,6 +1,11 @@
 package io.booter.injector.core.supplier;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.function.Supplier;
@@ -11,70 +16,25 @@ public final class Suppliers {
     private Suppliers() {
     }
 
-    public static <T> Supplier<T> lazy(Supplier<T> factory) {
-        return markableReferenceLazy(factory);
-    }
-
-    public static <T> Supplier<T> lambdaLazy(final Supplier<T> factory) {
+    public static <T> Supplier<T> lazy(final Supplier<T> factory) {
         return new Supplier<T>() {
-            private final Supplier<T> defaultDelegate = this::initializer;
+            private final Supplier<T> defaultDelegate = () -> init();
+            private final AtomicBoolean marker = new AtomicBoolean();
             private Supplier<T> delegate = defaultDelegate;
 
-            private T initializer() {
-                synchronized (defaultDelegate) {
-                    if (delegate != defaultDelegate) {
-                        return delegate.get();
-                    }
-
+            private T init() {
+                if (marker.compareAndSet(false, true)) {
                     final T instance = factory.get();
                     delegate = () -> instance;
-                    return instance;
-                }
-            }
-
-            public T get() {
-                return delegate.get();
-            }
-        };
-    }
-
-    public static <T> Supplier<T> doubleCheckedLazy(final Supplier<T> factory) {
-        return new Supplier<T>() {
-            private volatile Supplier<T> delegate = null;
-
-            public T get() {
-                Supplier<T> tmp = delegate;
-
-                if (delegate == null) {
-                    synchronized (this) {
-                        tmp = delegate;
-
-                        if (tmp == null) {
-                            T instance = factory.get();
-                            delegate = () -> instance;
-
-                            return instance;
-                        }
+                } else {
+                    while (delegate == defaultDelegate) {
                     }
                 }
-
                 return delegate.get();
             }
-        };
-    }
-
-    public static <T> Supplier<T> markableReferenceLazy(final Supplier<T> factory) {
-        return new Supplier<T>() {
-            private final AtomicMarkableReference<T> reference = new AtomicMarkableReference<>(null, false);
-            private Supplier<T> delegate;
 
             public T get() {
-                if (!reference.isMarked()) {
-                    T instance = factory.get();
-                    return reference.compareAndSet(null, instance, false, true) ? instance : reference.getReference();
-                }
-
-                return reference.getReference();
+                return delegate.get();
             }
         };
     }
@@ -85,6 +45,47 @@ public final class Suppliers {
             return () -> instance;
         }
         return lazy(factory);
+    }
+
+    public static <T> Supplier<T> enhancing(final Supplier<T> initial, Supplier<Supplier<T>> enhanced) {
+        return new Supplier<T>() {
+            private Supplier<T> firstStage = () -> init();
+            private Supplier<T> delegate = firstStage;
+
+            private T init() {
+                if (delegate == firstStage) {
+                    delegate = enhanced.get();
+                }
+                return initial.get();
+            }
+
+            @Override
+            public T get() {
+                return delegate.get();
+            }
+        };
+    }
+
+    public static <T> Supplier<T> instantiator(Method method, Supplier<?>[] parameters) {
+        if (method == null || parameters == null || parameters.length < (method.getParameterCount() + 1)) {
+            throw new InjectorException("Invalid parameters: method "
+                                        + Objects.toString(method)
+                                        + ", parameters "
+                                        + Objects.toString(parameters));
+        }
+
+        return () -> {
+            try {
+                Object[] values = new Object[method.getParameterCount() - 1];
+                for (int i = 0; i < values.length - 1; i++) {
+                    values[i] = parameters[i + 1].get();
+                }
+
+                return (T) method.invoke(parameters[0].get(), values);
+            } catch (Exception e) {
+                throw new InjectorException("Unable to create instance. Calling " + method);
+            }
+        };
     }
 
     public static <T> Supplier<T> constructor(Constructor<T> constructor, Supplier<?>[] parameters) {
@@ -102,28 +103,7 @@ public final class Suppliers {
         };
     }
 
-    public static <T> Supplier<T> enhancingConstructor(Constructor<T> constructor, Supplier<?>[] parameters) {
-        Supplier<T> initialFactory = constructor(constructor, parameters);
-
-        return new Supplier<T>() {
-            private static final int TRESHOLD = 3;
-
-            private final AtomicInteger counter = new AtomicInteger();
-            private final AtomicMarkableReference<Supplier<T>> reference = new AtomicMarkableReference<>(initialFactory, false);
-
-            @Override
-            public T get() {
-                if (!reference.isMarked()) {
-                    if (counter.incrementAndGet() < TRESHOLD) {
-                        return reference.getReference().get();
-                    }
-                    Supplier<T> supplier = LambdaFactory.create(constructor, parameters);
-
-                    reference.compareAndSet(null, supplier, false, true);
-                }
-
-                return reference.getReference().get();
-            }
-        };
+    public static <T> Supplier<T> fastConstructor(Constructor<T> constructor, Supplier<?>[] parameters) {
+        return LambdaFactory.create(constructor, parameters);
     }
 }

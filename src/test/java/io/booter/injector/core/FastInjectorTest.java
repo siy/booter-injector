@@ -59,6 +59,14 @@ public class FastInjectorTest {
     }
 
     @Test
+    public void singletonInstanceShouldBeSameForSubsequentCalls() throws Exception {
+        Injector injector = new FastInjector();
+        Foo instance = injector.get(Foo.class);
+
+        assertThat(instance).isSameAs(injector.get(Foo.class));
+    }
+
+    @Test
     public void shouldInsertSupplierDependency() throws Exception {
         Injector injector = new FastInjector();
         BeanWithSupplierDependency instance = injector.get(BeanWithSupplierDependency.class);

@@ -1,9 +1,9 @@
 package io.booter.injector.core.beans;
 
-public class Bean1 {
+public class ClassWith1ParameterConstructor {
     private final Long p0;
 
-    public Bean1(Long p0) {
+    public ClassWith1ParameterConstructor(Long p0) {
         this.p0 = p0;
     }
 

@@ -15,6 +15,8 @@ import io.booter.injector.core.exception.InjectorException;
 import io.booter.injector.core.supplier.DefaultSupplierFactory;
 import io.booter.injector.core.supplier.LambdaFactory;
 
+import static io.booter.injector.core.supplier.Suppliers.*;
+
 public class FastInjector implements Injector {
     private final ConcurrentMap<Key, Supplier<?>> bindings = new ConcurrentHashMap<>();
     private final SupplierFactory factory;
@@ -109,7 +111,7 @@ public class FastInjector implements Injector {
 
         for(Method method : clazz.getDeclaredMethods()) {
             if (method.isAnnotationPresent(Supplies.class)) {
-                addBinding(method, configSupplier);
+                addMethodBinding(method, configSupplier);
             }
         }
 
@@ -118,11 +120,12 @@ public class FastInjector implements Injector {
         }
     }
 
-    private void addBinding(Method method, Supplier<?> instanceSupplier) {
+    private <T> void addMethodBinding(Method method, Supplier<T> instanceSupplier) {
         Supplier<?>[] invocationParameters = buildMethodCallParameters(method, instanceSupplier);
 
-        bindings.computeIfAbsent(Key.of(method.getGenericReturnType()),
-                                 (key) -> LambdaFactory.create(method, invocationParameters));
+        bindings.computeIfAbsent(Key.of(method.getGenericReturnType(), method.getAnnotations()),
+                                 (key) -> enhancing(instantiator(method, invocationParameters),
+                                                    () -> LambdaFactory.create(method, invocationParameters)));
     }
 
     private Supplier<?>[] buildMethodCallParameters(Method method, Supplier<?> instanceSupplier) {
