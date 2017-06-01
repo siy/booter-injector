@@ -2,6 +2,7 @@ package io.booter.injector.core.supplier;
 
 import org.junit.Test;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,6 +40,24 @@ public class SuppliersTest {
         assertEquals(Integer.valueOf(1), supplier.get());
         assertEquals(Integer.valueOf(1), supplier.get());
         assertEquals(Integer.valueOf(2), supplier.get());
+    }
+
+    //TODO: fix it
+//    @Test
+//    public void shouldCreateMethodInstantiator() throws Exception {
+//        Method method = getClass().getDeclaredMethod("method1", int.class);
+//        AtomicInteger counter = new AtomicInteger();
+//        Supplier<?>[] parameters = new Supplier[2];
+//        parameters[0] = () -> this;
+//        parameters[1] = () -> counter.incrementAndGet();
+//
+//        Supplier<String> supplier = Suppliers.instantiator(method, parameters);
+//
+//        assertEquals("1", supplier.get());
+//    }
+
+    public String method1(int val) {
+        return Integer.toString(val);
     }
 
     private void measure(Supplier<Integer> supplier, String type) throws InterruptedException, java.util.concurrent.ExecutionException {

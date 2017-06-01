@@ -130,10 +130,11 @@ public class FastInjector implements Injector {
     }
 
     private <T> void addMethodBinding(Method method, Supplier<T> instanceSupplier) {
-        Supplier<?>[] invocationParameters = buildMethodCallParameters(method, instanceSupplier);
+        Supplier<?>[] parameters = buildMethodCallParameters(method, instanceSupplier);
 
         bindings.computeIfAbsent(Key.of(method.getGenericReturnType(), method.getAnnotations()),
-                                 (key) -> fastMethodConstructor(method, invocationParameters));
+                                 (key) -> enhancing(instantiator(method, parameters),
+                                                    () -> fastMethodConstructor(method, parameters)));
     }
 
     private Supplier<?>[] buildMethodCallParameters(Method method, Supplier<?> instanceSupplier) {

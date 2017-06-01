@@ -99,6 +99,27 @@ public class LambdaFactoryMethodTest {
         createAndInvokeMethod(10);
     }
 
+    @Test(expected = InjectorException.class)
+    public void shouldFailToCreateLambdaForNullMethod() throws Throwable {
+        LambdaFactory.create((Method) null, parameters);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldFailToCreateLambdaForNullParameters() throws Throwable {
+        Method method0 = getClass().getMethod("method0");
+        assertThat(method0).isNotNull();
+
+        LambdaFactory.create(method0, null);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldFailToCreateLambdaIfNotEnoughParameters() throws Throwable {
+        Method method0 = getClass().getMethod("method2", int.class, long.class);
+        assertThat(method0).isNotNull();
+
+        LambdaFactory.create(method0, new Supplier[1]);
+    }
+
     private void createAndInvokeMethod(int size) throws Throwable {
         Supplier<?>[] params = Arrays.copyOf(parameters, size + 1);
         Class<?>[] paramTypes = Arrays.copyOf(types, size);
