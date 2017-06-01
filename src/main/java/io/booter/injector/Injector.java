@@ -22,7 +22,13 @@ public interface Injector {
 
     <T> Injector bind(Key key, T implementation, boolean throwIfExists);
 
+    Injector configure(Class<?>... configurators);
+
     static Injector create() {
         return new FastInjector();
+    }
+
+    static Injector create(Class<?>...classes) {
+        return new FastInjector().configure(classes);
     }
 }

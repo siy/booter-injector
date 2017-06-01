@@ -76,6 +76,18 @@ public class FastInjector implements Injector {
         return checkForExistingBinding(key, throwIfExists, bindings.putIfAbsent(key, () -> implementation));
     }
 
+    @Override
+    public Injector configure(Class<?>... configurators) {
+        for(Class<?> clazz : configurators) {
+            if (clazz == null) {
+                throw new InjectorException("Null class is passed to configure()");
+            }
+
+            configure(clazz);
+        }
+        return this;
+    }
+
     @SuppressWarnings("unchecked")
     <T> Supplier<T> collectBindings(Key key) {
         Constructor<?> constructor = locateConstructorAndConfigureInjector(key);
@@ -89,7 +101,7 @@ public class FastInjector implements Injector {
         ConfiguredBy configuredBy = constructor.getDeclaringClass().getAnnotation(ConfiguredBy.class);
 
         if (configuredBy != null) {
-            updateConfiguration(configuredBy);
+            configure(configuredBy.value());
         }
 
         return constructor;
@@ -103,9 +115,7 @@ public class FastInjector implements Injector {
         return this;
     }
 
-    private void updateConfiguration(ConfiguredBy configuredBy) {
-        Class<?> clazz = configuredBy.value();
-
+    private void configure(Class<?> clazz) {
         Supplier<?> configSupplier = supplier(Key.of(clazz));
 
         for(Method method : clazz.getDeclaredMethods()) {
