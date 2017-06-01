@@ -13,7 +13,6 @@ import io.booter.injector.annotations.Inject;
 import io.booter.injector.annotations.Supplies;
 import io.booter.injector.core.exception.InjectorException;
 import io.booter.injector.core.supplier.DefaultSupplierFactory;
-import io.booter.injector.core.supplier.LambdaFactory;
 
 import static io.booter.injector.core.supplier.Suppliers.*;
 
@@ -49,7 +48,7 @@ public class FastInjector implements Injector {
     @SuppressWarnings("unchecked")
     @Override
     public <T> Supplier<T> supplier(Key key) {
-        return (Supplier<T>) bindings.computeIfAbsent(key, (k) -> new PlaceholderSupplier<>(this, k));
+        return (Supplier<T>) bindings.computeIfAbsent(key, (k) -> factoryLazy(() -> collectBindings(key)));
     }
 
     @SuppressWarnings("unchecked")
@@ -124,8 +123,7 @@ public class FastInjector implements Injector {
         Supplier<?>[] invocationParameters = buildMethodCallParameters(method, instanceSupplier);
 
         bindings.computeIfAbsent(Key.of(method.getGenericReturnType(), method.getAnnotations()),
-                                 (key) -> enhancing(instantiator(method, invocationParameters),
-                                                    () -> LambdaFactory.create(method, invocationParameters)));
+                                 (key) -> fastMethodConstructor(method, invocationParameters));
     }
 
     private Supplier<?>[] buildMethodCallParameters(Method method, Supplier<?> instanceSupplier) {

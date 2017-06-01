@@ -31,6 +31,16 @@ public class SuppliersTest {
         assertEquals(1, counter.get());
     }
 
+    @Test
+    public void shouldProgressivelyEnhance() throws Exception {
+        Supplier<Integer> supplier = Suppliers.enhancing(() -> 1, () -> () -> 2);
+
+        assertEquals(Integer.valueOf(1), supplier.get());
+        assertEquals(Integer.valueOf(1), supplier.get());
+        assertEquals(Integer.valueOf(1), supplier.get());
+        assertEquals(Integer.valueOf(2), supplier.get());
+    }
+
     private void measure(Supplier<Integer> supplier, String type) throws InterruptedException, java.util.concurrent.ExecutionException {
         ExecutorService pool = Executors.newFixedThreadPool(NUM_THREADS);
 

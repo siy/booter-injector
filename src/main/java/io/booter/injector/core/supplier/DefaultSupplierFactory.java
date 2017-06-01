@@ -8,6 +8,7 @@ import javax.annotation.PostConstruct;
 import io.booter.injector.annotations.ComputationStyle;
 import io.booter.injector.annotations.Singleton;
 import io.booter.injector.core.SupplierFactory;
+import io.booter.injector.core.exception.InjectorException;
 
 import static io.booter.injector.core.supplier.Suppliers.*;
 
@@ -35,10 +36,26 @@ public class DefaultSupplierFactory implements SupplierFactory {
     private <T> Supplier<T> tryWrapWithPostConstruct(Constructor<T> constructor, Supplier<T> factory) {
         MethodHandle methodHandle = LambdaFactory.locateAnnotated(constructor.getDeclaringClass(), PostConstruct.class);
 
-        if (methodHandle != null) {
-            return new PostProcessingSupplier(factory, methodHandle, "Error while invoking @PostConstruct method");
+        if (methodHandle == null) {
+            return factory;
         }
-        return factory;
+
+        return new Supplier<T>() {
+            @Override
+            public T get() {
+                T instance = factory.get();
+
+                try {
+                    methodHandle.invoke(instance);
+                } catch (Throwable throwable) {
+                    throw new InjectorException("Error while invoking @PostConstruct method for "
+                                                + constructor.getDeclaringClass(),
+                                                throwable);
+                }
+
+                return instance;
+            }
+        };
     }
 
     private <T> Supplier<T> tryBuildSingleton(Supplier<T> instanceSupplier, Class<?> clazz) {

@@ -16,7 +16,7 @@ public final class Suppliers {
     private Suppliers() {
     }
 
-    public static <T> Supplier<T> lazy(final Supplier<T> factory) {
+    public static <T> Supplier<T> factoryLazy(final Supplier<Supplier<T>> factory) {
         return new Supplier<T>() {
             private final Supplier<T> defaultDelegate = () -> init();
             private final AtomicBoolean marker = new AtomicBoolean();
@@ -24,8 +24,7 @@ public final class Suppliers {
 
             private T init() {
                 if (marker.compareAndSet(false, true)) {
-                    final T instance = factory.get();
-                    delegate = () -> instance;
+                    delegate = factory.get();
                 } else {
                     while (delegate == defaultDelegate) {
                     }
@@ -39,6 +38,10 @@ public final class Suppliers {
         };
     }
 
+    public static <T> Supplier<T> lazy(final Supplier<T> factory) {
+        return factoryLazy(() -> {T instance = factory.get(); return () -> instance;});
+    }
+
     public static <T> Supplier<T> singleton(final Supplier<T> factory, boolean eager) {
         if (eager) {
             T instance = factory.get();
@@ -49,14 +52,12 @@ public final class Suppliers {
 
     public static <T> Supplier<T> enhancing(final Supplier<T> initial, Supplier<Supplier<T>> enhanced) {
         return new Supplier<T>() {
-            private Supplier<T> firstStage = () -> init();
-            private Supplier<T> delegate = firstStage;
+            private Supplier<T> delegate = () -> step(() -> () -> step(() -> () -> step(enhanced)));
 
-            private T init() {
-                if (delegate == firstStage) {
-                    delegate = enhanced.get();
-                }
-                return initial.get();
+            private T step(Supplier<Supplier<T>> next) {
+                T instance = initial.get();
+                delegate = next.get();
+                return instance;
             }
 
             @Override
@@ -105,5 +106,9 @@ public final class Suppliers {
 
     public static <T> Supplier<T> fastConstructor(Constructor<T> constructor, Supplier<?>[] parameters) {
         return LambdaFactory.create(constructor, parameters);
+    }
+
+    public static <T> Supplier<T> fastMethodConstructor(Method method, Supplier<?>[] parameters) {
+        return LambdaFactory.create(method, parameters);
     }
 }
