@@ -5,8 +5,6 @@ import java.lang.reflect.Proxy;
 import java.util.Collections;
 import java.util.Map;
 
-import io.booter.injector.core.exception.InjectorException;
-
 public class AnnotationFactory {
     public static <A extends Annotation> A create(Class<A> annotation) {
         return create(annotation, null);

@@ -1,13 +1,9 @@
 package io.booter.injector.core.supplier;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.function.Supplier;
 
 import io.booter.injector.core.exception.InjectorException;
@@ -67,7 +63,8 @@ public final class Suppliers {
         };
     }
 
-    public static <T> Supplier<T> instantiator(Method method, Supplier<?>[] parameters) {
+    @SuppressWarnings("unchecked")
+	public static <T> Supplier<T> instantiator(Method method, Supplier<?>[] parameters) {
         if (method == null || parameters == null || parameters.length < (method.getParameterCount() + 1)) {
             throw new InjectorException("Invalid parameters: method "
                                         + Objects.toString(method)

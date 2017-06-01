@@ -174,7 +174,8 @@ public class LambdaFactoryTest {
         assertThat(result).isNotNull();
     }
 
-    private static <T> Constructor<T> constructor(Class<T> clazz) {
+    @SuppressWarnings("unchecked")
+	private static <T> Constructor<T> constructor(Class<T> clazz) {
         return (Constructor<T>) clazz.getDeclaredConstructors()[0];
     }
 }

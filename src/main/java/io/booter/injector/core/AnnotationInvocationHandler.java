@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeSet;
 
 import io.booter.injector.core.exception.InjectorException;
@@ -68,7 +67,7 @@ class AnnotationInvocationHandler implements Annotation, InvocationHandler, Seri
     }
 
     private static Class<? extends Annotation> validateType(Class<? extends Annotation> annotationType) {
-        Class[] interfaces = annotationType.getInterfaces();
+        Class<?>[] interfaces = annotationType.getInterfaces();
 
         if (!annotationType.isAnnotation() || interfaces.length != 1 || interfaces[0] != Annotation.class) {
             throw new InjectorException(annotationType.getName() + " is not an annotation type");

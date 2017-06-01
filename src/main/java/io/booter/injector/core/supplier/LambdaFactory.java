@@ -1,12 +1,16 @@
 package io.booter.injector.core.supplier;
 
 import java.lang.annotation.Annotation;
-import java.lang.invoke.*;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.LambdaConversionException;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
-import java.lang.reflect.*;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.function.Supplier;
-
-import javax.annotation.PostConstruct;
 
 import io.booter.injector.core.exception.InjectorException;
 
@@ -143,7 +147,7 @@ public class LambdaFactory {
                                              target.type());
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static<T> Supplier<T> createSupplier(Supplier<?>[] suppliers, CallSite callSite, int parameterCount) throws Throwable {
         switch (parameterCount) {
             case 0: {
@@ -196,7 +200,7 @@ public class LambdaFactory {
                                                   suppliers[6].get(), suppliers[7].get(), suppliers[8].get());
             }
             case 10: {
-                Invocable10 invocable = (Invocable10) callSite.getTarget().invoke();
+				Invocable10 invocable = (Invocable10) callSite.getTarget().invoke();
                 return () -> (T) invocable.invoke(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
                                                   suppliers[3].get(), suppliers[4].get(), suppliers[5].get(),
                                                   suppliers[6].get(), suppliers[7].get(), suppliers[8].get(),

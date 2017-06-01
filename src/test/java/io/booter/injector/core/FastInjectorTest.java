@@ -98,27 +98,33 @@ public class FastInjectorTest {
     }
 
     private static class DefaultConstructorClass {
-        public DefaultConstructorClass(int param1) {
+        @SuppressWarnings("unused")
+		public DefaultConstructorClass(int param1) {
         }
 
+        @SuppressWarnings("unused")
         public DefaultConstructorClass() {
         }
     }
 
     private static class SingleConstructorClass {
+        @SuppressWarnings("unused")
         public SingleConstructorClass(int param1) {
         }
     }
 
     private static class MultipleConstructorClass {
+        @SuppressWarnings("unused")
         public MultipleConstructorClass(int param1) {
         }
 
+        @SuppressWarnings("unused")
         public MultipleConstructorClass(int param1, int param2) {
         }
     }
 
-    private static class TypedParameterClass {
+   @SuppressWarnings("unused")
+   private static class TypedParameterClass {
         public TypedParameterClass(List<List<String>> source) {
         }
     }

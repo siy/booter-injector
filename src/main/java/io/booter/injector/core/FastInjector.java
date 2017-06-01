@@ -51,7 +51,6 @@ public class FastInjector implements Injector {
         return (Supplier<T>) bindings.computeIfAbsent(key, (k) -> factoryLazy(() -> collectBindings(key)));
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T> Injector bind(Key key, Supplier<T> supplier, boolean throwIfExists) {
         return checkForExistingBinding(key, throwIfExists, bindings.putIfAbsent(key, supplier));
@@ -63,9 +62,10 @@ public class FastInjector implements Injector {
         return checkForExistingBinding(key, throwIfExists, bindings.putIfAbsent(key, supplier));
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> Injector bindSingleton(Key key, Class<T> implementation, boolean eager, boolean throwIfExists) {
-        Constructor<T> constructor = (Constructor<T>) locateConstructorAndConfigureInjector(Key.of(implementation));
+		Constructor<T> constructor = (Constructor<T>) locateConstructorAndConfigureInjector(Key.of(implementation));
         Supplier<T> supplier = factory.createSingleton(constructor, collectParameterSuppliers(constructor), eager);
 
         return checkForExistingBinding(key, throwIfExists, bindings.putIfAbsent(key, supplier));
