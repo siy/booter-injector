@@ -168,10 +168,25 @@ public class LambdaFactoryTest {
     }
 
     @Test(expected = InjectorException.class)
-    public void shouldFailToCreateBeanWith11Parameters() throws Exception {
-        Supplier<ClassWith11ParametersConstructor> result = LambdaFactory.create(constructor(ClassWith11ParametersConstructor.class), suppliers);
+    public void shouldFailToCreateSupplierForBeanWith11Parameters() throws Exception {
+        LambdaFactory.create(constructor(ClassWith11ParametersConstructor.class), suppliers);
+    }
 
-        assertThat(result).isNotNull();
+    @Test(expected = InjectorException.class)
+    public void shouldFailToCreateSupplierWithNotEnoughParameters() throws Exception {
+        Supplier<?>[] parameters = new Supplier[1];
+        parameters[0] = () -> 12345L;
+        LambdaFactory.create(constructor(ClassWith2ParametersConstructor.class), parameters);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldFailToCreateSupplierForNullClass() throws Exception {
+        LambdaFactory.create((Constructor<?>) null, suppliers);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldFailToCreateSupplierForNullArguments() throws Exception {
+        LambdaFactory.create(constructor(ClassWithDefaultConstructor.class), null);
     }
 
     @SuppressWarnings("unchecked")

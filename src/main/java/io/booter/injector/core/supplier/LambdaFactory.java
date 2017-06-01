@@ -200,7 +200,7 @@ public class LambdaFactory {
                                                   suppliers[6].get(), suppliers[7].get(), suppliers[8].get());
             }
             case 10: {
-				Invocable10 invocable = (Invocable10) callSite.getTarget().invoke();
+                Invocable10 invocable = (Invocable10) callSite.getTarget().invoke();
                 return () -> (T) invocable.invoke(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
                                                   suppliers[3].get(), suppliers[4].get(), suppliers[5].get(),
                                                   suppliers[6].get(), suppliers[7].get(), suppliers[8].get(),
