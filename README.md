@@ -10,6 +10,7 @@ This library is an opinionated, tiny and extremely fast DI container.
 - Minimalistic configuration.
 - Supports only constructor injection (no field injection)
 - Zero external dependency (everything is built-in)
+- Requires Java 8 and up
 
 ### Tiny
 
@@ -20,4 +21,17 @@ Packaged jar file is less than 50kB.
 Run-time speed is crucial, especially if injector is used to create many instances at run time. 
 For most modern DI containers this is an anti-pattern. Booter-injector performance is comparable 
 to plan new call, so DI container can be used even in such a patterns.
- 
+
+## Usage
+
+Maven:
+~~~~
+    <dependency>
+      <groupId>io.booter</groupId>
+      <artifactId>injector</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
+~~~~
+
+## Getting Startet
+

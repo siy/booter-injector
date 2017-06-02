@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import io.booter.injector.core.exception.InjectorException;
 
+//TODO: tests for parameter validation
 public class LambdaFactoryMethodTest {
     private final Supplier<?>[] parameters = new Supplier[]{
             () -> null,

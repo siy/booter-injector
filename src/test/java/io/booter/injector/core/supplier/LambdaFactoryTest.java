@@ -8,7 +8,8 @@ import io.booter.injector.core.exception.InjectorException;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-//TODO: cover all cases (number of parameters)
+
+//TODO: tests for parameter validation
 public class LambdaFactoryTest {
     private final Supplier<?>[] suppliers = new Supplier<?>[] {
             () -> 1234L,

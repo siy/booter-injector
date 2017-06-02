@@ -9,11 +9,21 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
+import static io.booter.injector.core.supplier.Utils.*;
+
 import io.booter.injector.core.exception.InjectorException;
 
+/**
+ * This class is a convenient run-time generator of lambdas which can be used to create instances of objects or call
+ * methods of classes. By convention all parameters required to call methods and constructors are passed as instances
+ * of {@link Supplier} class. For constructors array of input suppliers corresponds to constructor parameters.
+ * For methods array of suppliers consists of provider of instance for which method should be invoked and remaining
+ * suppliers provide rest of method parameters.
+ */
 public class LambdaFactory {
     private static final Class<?> INTERFACES[] = {
             Invocable0.class, Invocable1.class, Invocable2.class, Invocable3.class, Invocable4.class,
@@ -21,8 +31,7 @@ public class LambdaFactory {
             Invocable10.class
     };
 
-    private static final int MAX_CONSTRUCTOR_PARAMETER_COUNT = INTERFACES.length - 1;
-    private static final int MAX_METHOD_PARAMETER_COUNT = MAX_CONSTRUCTOR_PARAMETER_COUNT;
+    private static final int MAX_PARAMETER_COUNT = INTERFACES.length - 1;
 
     private static Lookup LOOKUP;
 
@@ -39,6 +48,15 @@ public class LambdaFactory {
         }
     }
 
+    /**
+     * Locate method annotated with specific annotation in given class and convert it into {@link MethodHandle}.
+     *
+     * @param declaringClass
+     *          Class to look into.
+     * @param annotation
+     *          Required annotation.
+     * @return  Method handle for found method or null if no method was found.
+     */
     public static MethodHandle locateAnnotated(Class<?> declaringClass, Class<? extends Annotation> annotation) {
         for (Method method: declaringClass.getDeclaredMethods()) {
             if (method.isAnnotationPresent(annotation)) {
@@ -48,6 +66,13 @@ public class LambdaFactory {
         return null;
     }
 
+    /**
+     * Create method handle for given method.
+     *
+     * @param method
+     *          Method to convert into handle.
+     * @return  Method handle
+     */
     public static MethodHandle create(Method method) {
         try {
             return LOOKUP.unreflect(method);
@@ -61,7 +86,7 @@ public class LambdaFactory {
      * supplier of instances of class to which passed method belongs.
      *
      * @param method
-     *          Method to convert into labmda
+     *          Method to convert into lambda.
      * @param suppliers
      *          Array of suppliers where first element provides instances of method class while remaining
      *          provide method parameters.
@@ -69,76 +94,40 @@ public class LambdaFactory {
      * @return  Created supplier.
      */
     public static <T> Supplier<T> create(Method method, Supplier<?>[] suppliers) {
-        if (method == null || suppliers == null || suppliers.length < 1) {
-            throw new InjectorException("Invalid parameters");
-        }
-        try {
-            return internalCreate(method, suppliers);
-        } catch (Throwable  e) {
-            throw new InjectorException("Unable to create lambda for " + method, e);
-        }
+        validateParameters(method, suppliers, 1);
+        return safeCall(() -> internalCreate(method, suppliers, true), method);
     }
 
+    /**
+     * Create lambda for the provided constructor.
+     *
+     * @param constructor
+     *          Constructor to convert to lambda
+     * @param suppliers
+     *          Array of suppliers of constructor parameters.
+     *
+     * @return  Created supplier.
+     */
     public static <T> Supplier<T> create(Constructor<T> constructor, Supplier<?>[] suppliers) {
-        if (constructor == null || suppliers == null) {
-            throw new InjectorException("Invalid parameters");
-        }
-
-        try {
-            return internalCreate(constructor, suppliers);
-        } catch (Throwable throwable) {
-            throw new InjectorException("Unable to create lambda for " + constructor, throwable);
-        }
+        validateParameters(constructor, suppliers, 0);
+        return safeCall(() -> internalCreate(constructor, suppliers, false), constructor);
     }
 
-    private static <T> Supplier<T> internalCreate(Constructor<T> constructor, Supplier<?>[] suppliers) throws Throwable {
-        int parameterCount = constructor.getParameterCount();
-
-        if (parameterCount > suppliers.length) {
-            throw new InjectorException("Provided less (" + suppliers.length
-                                        + ") parameters than required for constructor " + constructor);
-        }
-
-        return createSupplier(suppliers, createCallSite(constructor, parameterCount), parameterCount);
+    private static <T> Supplier<T> internalCreate(Executable constructor, Supplier<?>[] suppliers, boolean isMethod) throws Throwable {
+        int parameterCount = constructor.getParameterCount() + (isMethod ? 1:0);
+        return createSupplier(suppliers, createCallSite(constructor, parameterCount, isMethod), parameterCount);
     }
 
-    private static <T> Supplier<T> internalCreate(Method method, Supplier<?>[] suppliers) throws Throwable {
-        int parameterCount = method.getParameterCount() + 1;
-
-        if (parameterCount > suppliers.length) {
-            throw new InjectorException("Provided less (" + suppliers.length
-                                        + ") parameters than required for " + method);
-        }
-
-        return createSupplier(suppliers, createCallSite(method, parameterCount), parameterCount);
-    }
-
-    private static CallSite createCallSite(Constructor<?> constructor, int parameterCount)
+    private static CallSite createCallSite(Executable constructor, int parameterCount, boolean isMethod)
             throws ReflectiveOperationException, LambdaConversionException {
 
-        if (parameterCount > MAX_CONSTRUCTOR_PARAMETER_COUNT) {
-            throw new InjectorException("More than " + MAX_CONSTRUCTOR_PARAMETER_COUNT
-                                        + " constructor parameters are not supported in " + constructor);
+        if (parameterCount > MAX_PARAMETER_COUNT) {
+            throw new InjectorException("More than " + (MAX_PARAMETER_COUNT + (isMethod ? 1 : 0))
+                                        + " parameters are not supported in " + constructor);
         }
 
-        MethodHandle target = LOOKUP.unreflectConstructor(constructor);
-
-        return LambdaMetafactory.metafactory(LOOKUP, "invoke",
-                                             MethodType.methodType(INTERFACES[parameterCount]),
-                                             target.type().generic(),
-                                             target,
-                                             target.type());
-    }
-
-    private static CallSite createCallSite(Method method, int parameterCount)
-            throws ReflectiveOperationException, LambdaConversionException {
-
-        if (parameterCount > MAX_METHOD_PARAMETER_COUNT) {
-            throw new InjectorException("More than " + (MAX_METHOD_PARAMETER_COUNT + 1)
-                                        + " parameters are not supported in " + method);
-        }
-
-        MethodHandle target = LOOKUP.unreflect(method);
+        MethodHandle target = isMethod ? LOOKUP.unreflect((Method) constructor)
+                                       : LOOKUP.unreflectConstructor((Constructor<?>) constructor);
 
         return LambdaMetafactory.metafactory(LOOKUP, "invoke",
                                              MethodType.methodType(INTERFACES[parameterCount]),

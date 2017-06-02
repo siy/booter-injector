@@ -1,7 +1,9 @@
 package io.booter.injector.core.supplier;
 
+import io.booter.injector.core.beans.ClassWithDefaultConstructor;
 import org.junit.Test;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.*;
@@ -10,8 +12,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.*;
 
+//TODO: tests for parameter validation
 public class SuppliersTest {
     private static final int NUM_THREADS = Runtime.getRuntime().availableProcessors();
     private static final int NUM_ITERATIONS = NUM_THREADS * 100;
@@ -21,7 +24,7 @@ public class SuppliersTest {
         AtomicInteger counter = new AtomicInteger();
 
         measure(Suppliers.lazy(counter::incrementAndGet), "(lambda lazy)");
-        assertEquals(1, counter.get());
+        assertThat(counter.get()).isEqualTo(1);
     }
 
     @Test
@@ -29,32 +32,86 @@ public class SuppliersTest {
         AtomicInteger counter = new AtomicInteger();
 
         checkInstantiatedOnce(Suppliers.lazy(counter::incrementAndGet));
-        assertEquals(1, counter.get());
+        assertThat(counter.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldCreateLazySingleton() throws Exception {
+        AtomicInteger counter = new AtomicInteger();
+
+        Supplier<Integer> supplier = Suppliers.singleton(() -> counter.incrementAndGet(), false);
+        assertThat(counter.get()).isEqualTo(0);
+
+        Integer value1 = supplier.get();
+        assertThat(value1).isEqualTo(1);
+        assertThat(counter.get()).isEqualTo(1);
+
+        Integer value2 = supplier.get();
+        assertThat(value2).isEqualTo(1);
+        assertThat(counter.get()).isEqualTo(1);
+
+        assertThat(value1).isSameAs(value2);
     }
 
     @Test
     public void shouldProgressivelyEnhance() throws Exception {
         Supplier<Integer> supplier = Suppliers.enhancing(() -> 1, () -> () -> 2);
 
-        assertEquals(Integer.valueOf(1), supplier.get());
-        assertEquals(Integer.valueOf(1), supplier.get());
-        assertEquals(Integer.valueOf(1), supplier.get());
-        assertEquals(Integer.valueOf(2), supplier.get());
+        assertThat(supplier.get()).isEqualTo(1);
+        assertThat(supplier.get()).isEqualTo(1);
+        assertThat(supplier.get()).isEqualTo(1);
+        assertThat(supplier.get()).isEqualTo(2);
     }
 
-    //TODO: fix it
-//    @Test
-//    public void shouldCreateMethodInstantiator() throws Exception {
-//        Method method = getClass().getDeclaredMethod("method1", int.class);
-//        AtomicInteger counter = new AtomicInteger();
-//        Supplier<?>[] parameters = new Supplier[2];
-//        parameters[0] = () -> this;
-//        parameters[1] = () -> counter.incrementAndGet();
-//
-//        Supplier<String> supplier = Suppliers.instantiator(method, parameters);
-//
-//        assertEquals("1", supplier.get());
-//    }
+    @Test
+    public void shouldCreateMethodInstantiator() throws Exception {
+        Method method = getClass().getDeclaredMethod("method1", int.class);
+        AtomicInteger counter = new AtomicInteger();
+        Supplier<?>[] parameters = new Supplier[2];
+        parameters[0] = () -> this;
+        parameters[1] = () -> counter.incrementAndGet();
+
+        Supplier<String> supplier = Suppliers.instantiator(method, parameters);
+
+        assertThat(supplier.get()).isEqualTo("1");
+        assertThat(supplier.get()).isEqualTo("2");
+    }
+
+    @Test
+    public void shouldCreateFastMethodConstructor() throws Exception {
+        Method method = getClass().getDeclaredMethod("method1", int.class);
+        AtomicInteger counter = new AtomicInteger();
+        Supplier<?>[] parameters = new Supplier[2];
+        parameters[0] = () -> this;
+        parameters[1] = () -> counter.incrementAndGet();
+
+        Supplier<String> supplier = Suppliers.fastMethodConstructor(method, parameters);
+
+        assertThat(supplier.get()).isEqualTo("1");
+        assertThat(supplier.get()).isEqualTo("2");
+    }
+
+    @Test
+    public void shouldCreateFastConstructor() throws Exception {
+        Constructor<ClassWithDefaultConstructor> constructor = ClassWithDefaultConstructor.class.getDeclaredConstructor();
+        Supplier<?>[] parameters = new Supplier[0];
+
+        Supplier<ClassWithDefaultConstructor> supplier = Suppliers.fastConstructor(constructor, parameters);
+
+        assertThat(supplier).isNotNull();
+        assertThat(supplier.get()).isInstanceOf(ClassWithDefaultConstructor.class);
+    }
+
+    @Test
+    public void shouldCreateConstructor() throws Exception {
+        Constructor<ClassWithDefaultConstructor> constructor = ClassWithDefaultConstructor.class.getDeclaredConstructor();
+        Supplier<?>[] parameters = new Supplier[0];
+
+        Supplier<ClassWithDefaultConstructor> supplier = Suppliers.constructor(constructor, parameters);
+
+        assertThat(supplier).isNotNull();
+        assertThat(supplier.get()).isInstanceOf(ClassWithDefaultConstructor.class);
+    }
 
     public String method1(int val) {
         return Integer.toString(val);
@@ -70,7 +127,7 @@ public class SuppliersTest {
         long start = System.nanoTime();
         for(int i = 0; i < NUM_ITERATIONS; i++) {
             for (Future<Integer> future : pool.invokeAll(callables)) {
-                assertEquals(Integer.valueOf(1), future.get());
+                assertThat(future.get()).isEqualTo(1);
             }
         }
         System.out.printf("Time %s : %.2fms\n",  type, (System.nanoTime() - start)/1000000.0);
@@ -87,7 +144,7 @@ public class SuppliersTest {
                                                      .collect(Collectors.toList());
 
         for(Future<Integer> future : pool.invokeAll(callables)) {
-            assertEquals(Integer.valueOf(1), future.get());
+            assertThat(future.get()).isEqualTo(1);
         }
     }
 }

@@ -29,7 +29,7 @@ import io.booter.injector.core.exception.InjectorException;
  * </p>
  * <p>
  * Note: {@link #equals(Object)} and {@link #hashCode()} and implemented as specified
- * by {@link Annotation}, so instances are safe to mix with normal annotations.
+ * by {@link Annotation}, so instances are safeCreate to mix with normal annotations.
  *
  * Modified version of AnnotationInvocationHandler from https://github.com/leangen/geantyref
  *

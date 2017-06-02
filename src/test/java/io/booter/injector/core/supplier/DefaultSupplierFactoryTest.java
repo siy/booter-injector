@@ -12,6 +12,7 @@ import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.*;
 
+//TODO: tests for parameter validation
 public class DefaultSupplierFactoryTest {
     private static final Supplier<?>[] EMPTY = new Supplier[0];
 
