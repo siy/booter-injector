@@ -1,15 +1,20 @@
 package io.booter.injector.core;
 
+import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
 import javax.annotation.PostConstruct;
 
+import io.booter.injector.AbstractModule;
 import io.booter.injector.Injector;
-import io.booter.injector.annotations.Inject;
-import io.booter.injector.annotations.Singleton;
+import io.booter.injector.TypeToken;
+import io.booter.injector.annotations.*;
 import io.booter.injector.core.exception.InjectorException;
+import org.assertj.core.internal.Longs;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -91,6 +96,143 @@ public class FastInjectorTest {
         assertThat(instance.ber()).isInstanceOf(Ber.class);
     }
 
+    @Test
+    public void shouldBindInterfaceToImplementationManually() throws Exception {
+        Injector injector = new FastInjector();
+        injector.bind(Key.of(new TypeToken<List<String>>() {}), ListOfStringsImpl.class, false);
+
+        List<String> instance = injector.get(Key.of(new TypeToken<List<String>>() {}));
+
+        assertThat(instance).isNotNull();
+        assertThat(instance).isInstanceOf(ListOfStringsImpl.class);
+    }
+
+    @Test
+    public void shouldBindInterfaceToImplementationViaAnnotation() throws Exception {
+        Injector injector = new FastInjector();
+
+        List<String> instance = injector.get(ListOfStrings.class);
+
+        assertThat(instance).isNotNull();
+        assertThat(instance).isInstanceOf(ListOfStringsImpl.class);
+    }
+
+    @Test
+    public void shouldConfigureBindingsViaAnnotation() throws Exception {
+        Injector injector = new FastInjector();
+        List<Long> instance = injector.get(ListOfLongs.class);
+
+        assertThat(instance).isNotNull();
+        assertThat(instance).isInstanceOf(ListOfLongsImpl.class);
+        assertThat(instance).containsExactly(91L, 82L, 73L, 64L);
+    }
+
+    @Test
+    public void shouldConfigureBindingsFromMethods() throws Exception {
+        Injector injector = new FastInjector();
+        List<Integer> instance = injector.get(ListOfIntegers.class);
+
+        assertThat(instance).isNotNull();
+        assertThat(instance).isInstanceOf(ListOfIntegersImpl.class);
+        assertThat(instance).containsExactly(82, 73, 91, 64);
+    }
+
+    @Test
+    public void shouldBindAnnotatedParameter() throws Exception {
+        Injector injector = new FastInjector();
+
+        AnnotatedConstructorParameterClass instance = injector.get(AnnotatedConstructorParameterClass.class);
+        assertThat(instance).isNotNull();
+        assertThat(instance.getValue()).isEqualTo(42);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfConfiguredByRefersToInterface() throws Exception {
+        new FastInjector().get(SimpleInterface.class);
+    }
+
+    //---- Test classes
+    @ImplementedBy(SimpleInterface2.class)
+    public interface SimpleInterface {
+    }
+
+    public interface SimpleInterface2 {
+    }
+
+    public static class ListOfStringsImpl extends ArrayList<String> implements ListOfStrings {
+    }
+
+    @ImplementedBy(ListOfStringsImpl.class)
+    public interface ListOfStrings extends List<String> {
+    }
+
+    @ImplementedBy(ListOfLongsImpl.class)
+    public interface ListOfLongs extends List<Long> {
+    }
+
+    @ImplementedBy(ListOfIntegersImpl.class)
+    public interface ListOfIntegers extends List<Integer> {
+    }
+
+    @ConfiguredBy(LongListModule.class)
+    public static class ListOfLongsImpl extends ArrayList<Long> implements ListOfLongs {
+        public ListOfLongsImpl(Long ... initial) {
+            super(Arrays.asList(initial));
+        }
+    }
+
+    public static class LongListModule extends AbstractModule {
+        @Override
+        protected void configure() {
+            bind(Long[].class).toInstance(new Long[] {91L, 82L, 73L, 64L});
+        }
+    }
+
+    @ConfiguredBy(IntegerListModule.class)
+    public static class ListOfIntegersImpl extends ArrayList<Integer> implements ListOfIntegers {
+        public ListOfIntegersImpl(Integer ... initial) {
+            super(Arrays.asList(initial));
+        }
+    }
+
+    public static class IntegerListModule extends AbstractModule {
+        @Override
+        protected void configure() {
+        }
+
+        @Supplies
+        public Integer[] getList() {
+            return new Integer[] {82, 73, 91, 64};
+        }
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.PARAMETER})
+    @Documented
+    @BindingAnnotation
+    public @interface TestAnnotation {
+    }
+
+    @ConfiguredBy(AnnotatedConstructorParameterClassModule.class)
+    public static class AnnotatedConstructorParameterClass {
+        private final int value;
+
+        public AnnotatedConstructorParameterClass(@TestAnnotation int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+    }
+
+    public static class AnnotatedConstructorParameterClassModule extends AbstractModule {
+        @Override
+        protected void configure() {
+            bind(int.class).annotatedWith(TestAnnotation.class).toInstance(42);
+        }
+    }
+
     private static class AnnotatedConstructorClass {
         @Inject
         public AnnotatedConstructorClass(int j) {
@@ -99,7 +241,7 @@ public class FastInjectorTest {
 
     private static class DefaultConstructorClass {
         @SuppressWarnings("unused")
-		public DefaultConstructorClass(int param1) {
+        public DefaultConstructorClass(int param1) {
         }
 
         @SuppressWarnings("unused")

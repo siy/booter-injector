@@ -11,6 +11,7 @@ import io.booter.injector.core.SupplierFactory;
 import io.booter.injector.core.exception.InjectorException;
 
 import static io.booter.injector.core.supplier.Suppliers.*;
+import static io.booter.injector.core.supplier.Utils.*;
 
 public class DefaultSupplierFactory implements SupplierFactory {
     public DefaultSupplierFactory() {
@@ -18,6 +19,8 @@ public class DefaultSupplierFactory implements SupplierFactory {
 
     @Override
     public <T> Supplier<T> create(Constructor<T> constructor, Supplier<?>[] parameters) {
+        validateParameters(constructor, parameters, 0);
+
         Supplier<T> factory = tryWrapWithPostConstruct(constructor,
                                                        enhancing(constructor(constructor, parameters),
                                                                  () -> fastConstructor(constructor, parameters)));
@@ -27,6 +30,8 @@ public class DefaultSupplierFactory implements SupplierFactory {
 
     @Override
     public <T> Supplier<T> createSingleton(Constructor<T> constructor, Supplier<?>[] parameters, boolean eager) {
+        validateParameters(constructor, parameters, 0);
+
         Supplier<T> factory = tryWrapWithPostConstruct(constructor,
                                                        constructor(constructor, parameters));
 

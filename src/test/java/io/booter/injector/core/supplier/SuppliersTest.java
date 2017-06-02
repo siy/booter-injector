@@ -1,6 +1,8 @@
 package io.booter.injector.core.supplier;
 
+import io.booter.injector.core.beans.ClassWith1ParameterConstructor;
 import io.booter.injector.core.beans.ClassWithDefaultConstructor;
+import io.booter.injector.core.exception.InjectorException;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
@@ -14,7 +16,6 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.*;
 
-//TODO: tests for parameter validation
 public class SuppliersTest {
     private static final int NUM_THREADS = Runtime.getRuntime().availableProcessors();
     private static final int NUM_ITERATIONS = NUM_THREADS * 100;
@@ -33,6 +34,68 @@ public class SuppliersTest {
 
         checkInstantiatedOnce(Suppliers.lazy(counter::incrementAndGet));
         assertThat(counter.get()).isEqualTo(1);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullIsPassedToLazy() throws Exception {
+        Suppliers.lazy(null);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullIsPassedToFactoryLazy() throws Exception {
+        Suppliers.factoryLazy(null);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullIsPassedToSingleton() throws Exception {
+        Suppliers.singleton(null, false);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullIsPassedToEnhancing1() throws Exception {
+        Suppliers.enhancing(null, () -> () -> 1);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullIsPassedToEnhancing() throws Exception {
+        Suppliers.enhancing(() -> 1, null);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullIsPassedToInstantiator1() throws Exception {
+        Suppliers.instantiator(null, new Supplier[0]);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullIsPassedToInstantiator2() throws Exception {
+        Method method = getClass().getDeclaredMethod("method1", int.class);
+        Suppliers.instantiator(method, null);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNotEnoughParametersPassedToInstantiator() throws Exception {
+        Method method = getClass().getDeclaredMethod("method1", int.class);
+        Supplier<?>[] parameters = new Supplier[1];
+        parameters[0] = () -> this;
+
+        Suppliers.instantiator(method, parameters);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullIsPassedToConstructor1() throws Exception {
+        Suppliers.constructor(null, new Supplier[0]);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullIsPassedToConstructor2() throws Exception {
+        Constructor<ClassWithDefaultConstructor> constructor = ClassWithDefaultConstructor.class.getDeclaredConstructor();
+        Suppliers.constructor(constructor, null);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNotEnoughParametersPassedToConstructor() throws Exception {
+        Constructor<ClassWith1ParameterConstructor> constructor = ClassWith1ParameterConstructor.class.getDeclaredConstructor(Long.class);
+        Suppliers.constructor(constructor, new Supplier[0]);
     }
 
     @Test

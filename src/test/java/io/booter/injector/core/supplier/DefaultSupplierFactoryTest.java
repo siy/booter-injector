@@ -12,9 +12,38 @@ import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.*;
 
-//TODO: tests for parameter validation
 public class DefaultSupplierFactoryTest {
     private static final Supplier<?>[] EMPTY = new Supplier[0];
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullPassedAsPatameterToCreate1() throws Exception {
+        new DefaultSupplierFactory().create(null, EMPTY);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullPassedAsPatameterToCreate2() throws Exception {
+        new DefaultSupplierFactory().create(constructor(ClassWithDefaultConstructor.class), null);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNotEnoughParametersArePasseToCreate() throws Exception {
+        new DefaultSupplierFactory().create(constructor(ClassWith1ParameterConstructor.class), EMPTY);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullPassedAsPatameterToCreateSingleton1() throws Exception {
+        new DefaultSupplierFactory().createSingleton(null, EMPTY, false);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullPassedAsPatameterToCreateSingleton2() throws Exception {
+        new DefaultSupplierFactory().createSingleton(constructor(ClassWithDefaultConstructor.class), null, false);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNotEnoughParametersArePasseToCreateSingleton() throws Exception {
+        new DefaultSupplierFactory().createSingleton(constructor(ClassWith1ParameterConstructor.class), EMPTY, true);
+    }
 
     @Test
     public void shouldCreateFactorySupplier() throws Exception {

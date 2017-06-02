@@ -18,6 +18,7 @@ import static io.booter.injector.core.supplier.Suppliers.*;
 
 public class FastInjector implements Injector {
     private final ConcurrentMap<Key, Supplier<?>> bindings = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, Class<?>> modules = new ConcurrentHashMap<>();
     private final SupplierFactory factory;
 
     public FastInjector() {
@@ -65,7 +66,7 @@ public class FastInjector implements Injector {
     @SuppressWarnings("unchecked")
     @Override
     public <T> Injector bindSingleton(Key key, Class<T> implementation, boolean eager, boolean throwIfExists) {
-		Constructor<T> constructor = (Constructor<T>) locateConstructorAndConfigureInjector(Key.of(implementation));
+        Constructor<T> constructor = (Constructor<T>) locateConstructorAndConfigureInjector(Key.of(implementation));
         Supplier<T> supplier = factory.createSingleton(constructor, collectParameterSuppliers(constructor), eager);
 
         return checkForExistingBinding(key, throwIfExists, bindings.putIfAbsent(key, supplier));
@@ -90,18 +91,16 @@ public class FastInjector implements Injector {
 
     @SuppressWarnings("unchecked")
     <T> Supplier<T> collectBindings(Key key) {
-        Constructor<?> constructor = locateConstructorAndConfigureInjector(key);
-
-        return (Supplier<T>) factory.create(constructor, collectParameterSuppliers(constructor));
+        return (Supplier<T>) factory.create(locateConstructorAndConfigureInjector(key),
+                                            collectParameterSuppliers(locateConstructorAndConfigureInjector(key)));
     }
 
     private Constructor<?> locateConstructorAndConfigureInjector(Key key) {
         Constructor<?> constructor = locateConstructor(key);
-
         ConfiguredBy configuredBy = constructor.getDeclaringClass().getAnnotation(ConfiguredBy.class);
 
         if (configuredBy != null) {
-            configure(configuredBy.value());
+            modules.computeIfAbsent(configuredBy.value(), (clazz) -> configure(clazz));
         }
 
         return constructor;
@@ -115,7 +114,7 @@ public class FastInjector implements Injector {
         return this;
     }
 
-    private void configure(Class<?> clazz) {
+    private Class<?> configure(Class<?> clazz) {
         Supplier<?> configSupplier = supplier(Key.of(clazz));
 
         for(Method method : clazz.getDeclaredMethods()) {
@@ -124,9 +123,11 @@ public class FastInjector implements Injector {
             }
         }
 
-        if (clazz.isAssignableFrom(Module.class)) {
+        if (Module.class.isAssignableFrom(clazz)) {
             ((Module) configSupplier.get()).configure(this);
         }
+        
+        return clazz;
     }
 
     private <T> void addMethodBinding(Method method, Supplier<T> instanceSupplier) {
@@ -170,12 +171,11 @@ public class FastInjector implements Injector {
         if (clazz.isInterface()) {
             ImplementedBy implementationClass = clazz.getAnnotation(ImplementedBy.class);
 
-            if (implementationClass == null) {
+            if (implementationClass == null || implementationClass.value().isInterface()) {
                 throw new InjectorException("Unable to locate suitable implementation for " + key);
             }
 
             clazz = implementationClass.value();
-        }
 
         Constructor<?> instanceConstructor = null;
         Constructor<?> defaultConstructor = null;

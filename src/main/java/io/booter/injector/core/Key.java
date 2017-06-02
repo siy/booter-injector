@@ -9,7 +9,6 @@ import io.booter.injector.TypeToken;
 import io.booter.injector.annotations.BindingAnnotation;
 import io.booter.injector.core.exception.InjectorException;
 
-//TODO: check handling of arrays and wildcard types
 public class Key {
     private final Annotation annotation;
     private final Type type;
@@ -17,11 +16,11 @@ public class Key {
     private final boolean supplier;
 
     private Key(Type type, boolean supplier, Annotation... annotations) {
-        this(type, supplier, failIfNull(lookupClass(type), type), findBindingAnnotation(annotations));
+        this(type, supplier, lookupClass(type), findBindingAnnotation(annotations));
     }
 
     private Key(Type type, boolean supplier) {
-        this(type, supplier, failIfNull(lookupClass(type), type), null);
+        this(type, supplier, lookupClass(type), null);
     }
 
     private Key(Type type, boolean supplier, Class<?> clazz, Annotation annotation) {
@@ -49,7 +48,7 @@ public class Key {
         throw new InjectorException("Unable to determine parameter type for " + parameter);
     }
 
-    public static Key of(Class<?> type) {
+    public static Key of(Type type) {
         return new Key(type, false);
     }
 
@@ -63,6 +62,10 @@ public class Key {
 
     public static <T> Key of(TypeToken<T> token) {
         return new Key(token.type(), false);
+    }
+
+    public static <T> Key of(TypeToken<T> token, Annotation... annotations) {
+        return new Key(token.type(), false, annotations);
     }
 
     @Override
@@ -118,23 +121,15 @@ public class Key {
         builder.append(type.getTypeName());
 
         if (annotation != null) {
-            builder.append(" @").append(annotation.getClass().getSimpleName());
+            builder.append(" @").append(annotation.annotationType().toString());
         }
 
         return builder.append('}').toString();
     }
 
-    private static Class<?> failIfNull(Class<?> clazz, Type type) {
-        if (clazz == null) {
-            throw new InjectorException("Unable to determine base class for "
-                                        + ((type == null) ? "null" : ("type " + type)));
-        }
-        return clazz;
-    }
-
     private static Annotation findBindingAnnotation(Annotation[] annotations) {
         for(Annotation annotation: annotations) {
-            if(annotation.getClass().isAnnotationPresent(BindingAnnotation.class)) {
+            if(annotation.annotationType().isAnnotationPresent(BindingAnnotation.class)) {
                 return annotation;
             }
         }

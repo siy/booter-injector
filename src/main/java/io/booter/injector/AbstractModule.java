@@ -16,11 +16,11 @@ public abstract class AbstractModule implements Module {
 
     protected abstract void configure();
 
-    <T> Builder<T> bind(Class<T> clazz) {
+    protected <T> Builder<T> bind(Class<T> clazz) {
         return new Builder<>(Key.of(clazz));
     }
 
-    <T> Builder<T> bind(TypeToken<T> token) {
+    protected <T> Builder<T> bind(TypeToken<T> token) {
         return new Builder<>(Key.of(token));
     }
 
@@ -36,27 +36,27 @@ public abstract class AbstractModule implements Module {
             return this;
         }
 
-        void to(Class<T> implementation) {
+        public void to(Class<? extends T> implementation) {
             injector.bind(key, implementation, true);
         }
 
-        void toInstance(T instance) {
+        public void toInstance(T instance) {
             injector.bind(key, instance, true);
         }
 
-        void toSupplier(Supplier<T> supplier) {
+        public void toSupplier(Supplier<? extends T> supplier) {
             injector.bind(key, supplier, true);
         }
 
-        void toSingleton(Class<T> implementation) {
+        public void toSingleton(Class<? extends T> implementation) {
+            toLazySingleton(implementation);
+        }
+
+        public void toLazySingleton(Class<? extends T> implementation) {
             injector.bindSingleton(key, implementation, false, true);
         }
 
-        void toLazySingleton(Class<T> implementation) {
-            injector.bindSingleton(key, implementation, false, true);
-        }
-
-        void toEagerSingleton(Class<T> implementation) {
+        public void toEagerSingleton(Class<? extends T> implementation) {
             injector.bindSingleton(key, implementation, true, true);
         }
     }
