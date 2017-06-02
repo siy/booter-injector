@@ -1,5 +1,13 @@
 package io.booter.injector.core;
 
+import io.booter.injector.AbstractModule;
+import io.booter.injector.Injector;
+import io.booter.injector.TypeToken;
+import io.booter.injector.annotations.*;
+import io.booter.injector.core.exception.InjectorException;
+import org.junit.Test;
+
+import javax.annotation.PostConstruct;
 import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -7,17 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
-import javax.annotation.PostConstruct;
-
-import io.booter.injector.AbstractModule;
-import io.booter.injector.Injector;
-import io.booter.injector.TypeToken;
-import io.booter.injector.annotations.*;
-import io.booter.injector.core.exception.InjectorException;
-import org.assertj.core.internal.Longs;
-import org.junit.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 public class FastInjectorTest {
     @Test
@@ -146,12 +144,94 @@ public class FastInjectorTest {
         assertThat(instance.getValue()).isEqualTo(42);
     }
 
+    @Test
+    public void shouldAllowManualConfiguration() throws Exception {
+        Injector injector = new FastInjector();
+
+        injector.configure(AnnotatedConstructorParameterClassModule.class);
+
+        AnnotatedConstructorParameterClassWithoutConfiguredBy instance
+                = injector.get(AnnotatedConstructorParameterClassWithoutConfiguredBy.class);
+
+        assertThat(instance).isNotNull();
+        assertThat(instance.getValue()).isEqualTo(42);
+    }
+
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfConfiguredByRefersToInterface() throws Exception {
         new FastInjector().get(SimpleInterface.class);
     }
 
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNoPublicConstructorsFound() throws Exception {
+        new FastInjector().get(ClassWithoutPublicConstructor.class);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfAttemptingConfigureWithNullClass() throws Exception {
+        new FastInjector().configure(AnnotatedConstructorParameterClassModule.class, null);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfAttemptingConfigureWithNullClasses() throws Exception {
+        new FastInjector().configure(null);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionForAttemptToAddExistingBidding() throws Exception {
+        Injector injector = new FastInjector();
+        injector.bind(Key.of(String.class), () -> "-", true);
+
+        assertThat(injector.get(String.class)).isEqualTo("-");
+
+        injector.bind(Key.of(String.class), () -> "-", true);
+    }
+
+    @Test
+    public void shouldNotThrowExceptionForAttemptToAddExistingBiddingIfThrowingIsDisabled() throws Exception {
+        Injector injector = new FastInjector();
+        injector.bind(Key.of(String.class), () -> "-", true);
+
+        assertThat(injector.get(String.class)).isEqualTo("-");
+
+        injector.bind(Key.of(String.class), () -> "-", false);
+    }
+
+    @Test
+    public void shouldAllowDirectManualConfigurationWithSingleton() throws Exception {
+        Injector injector = new FastInjector();
+        injector.bindSingleton(Key.of(List.class), ListOfIntegersImpl.class, false, false);
+
+        List<Integer> instance = injector.get(List.class);
+
+        assertThat(instance).isNotNull();
+        assertThat(instance).isInstanceOf(ListOfIntegersImpl.class);
+        assertThat(instance).containsExactly(82, 73, 91, 64);
+    }
+
+    @Test
+    public void shouldAllowDirectManualConfigurationWithSupplier() throws Exception {
+        Injector injector = new FastInjector();
+        injector.bind(Key.of(List.class), ArrayList::new, true);
+
+        List<Integer> instance = injector.get(List.class);
+
+        assertThat(instance).isNotNull();
+        assertThat(instance).isInstanceOf(ArrayList.class);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfMoreThanOneConstructorsAreAnnotated() throws Exception {
+        new FastInjector().get(TwoAnnotatedConstructorClass.class);
+    }
+
     //---- Test classes
+
+    public static class ClassWithoutPublicConstructor {
+        ClassWithoutPublicConstructor() {
+        }
+    }
+    
     @ImplementedBy(SimpleInterface2.class)
     public interface SimpleInterface {
     }
@@ -233,10 +313,34 @@ public class FastInjectorTest {
         }
     }
 
+    public static class AnnotatedConstructorParameterClassWithoutConfiguredBy {
+        private final int value;
+
+        public AnnotatedConstructorParameterClassWithoutConfiguredBy(@TestAnnotation int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+    }
+
+    public static class TwoAnnotatedConstructorClass {
+        @Inject
+        public TwoAnnotatedConstructorClass(int j) {
+        }
+
+        @Inject
+        public TwoAnnotatedConstructorClass(String s) {
+        }
+    }
+
     private static class AnnotatedConstructorClass {
         @Inject
         public AnnotatedConstructorClass(int j) {
         }
+
     }
 
     private static class DefaultConstructorClass {

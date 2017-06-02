@@ -1,10 +1,5 @@
 package io.booter.injector.core;
 
-import java.lang.reflect.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Supplier;
-
 import io.booter.injector.Injector;
 import io.booter.injector.Module;
 import io.booter.injector.annotations.ConfiguredBy;
@@ -13,6 +8,11 @@ import io.booter.injector.annotations.Inject;
 import io.booter.injector.annotations.Supplies;
 import io.booter.injector.core.exception.InjectorException;
 import io.booter.injector.core.supplier.DefaultSupplierFactory;
+
+import java.lang.reflect.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 
 import static io.booter.injector.core.supplier.Suppliers.*;
 
@@ -79,6 +79,10 @@ public class FastInjector implements Injector {
 
     @Override
     public Injector configure(Class<?>... configurators) {
+        if (configurators == null) {
+            throw new InjectorException("Null class is passed to configure()");
+        }
+
         for(Class<?> clazz : configurators) {
             if (clazz == null) {
                 throw new InjectorException("Null class is passed to configure()");
@@ -176,6 +180,7 @@ public class FastInjector implements Injector {
             }
 
             clazz = implementationClass.value();
+        }
 
         Constructor<?> instanceConstructor = null;
         Constructor<?> defaultConstructor = null;
