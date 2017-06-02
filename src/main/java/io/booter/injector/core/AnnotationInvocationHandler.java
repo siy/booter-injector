@@ -9,12 +9,8 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.TreeSet;
 
 import io.booter.injector.core.exception.InjectorException;
 
@@ -80,19 +76,25 @@ class AnnotationInvocationHandler implements Annotation, InvocationHandler, Seri
             throws InjectorException {
 
         Map<String, Object> result = new HashMap<>();
+        Map<String, Object> source = new HashMap<>(values);
 
         for (Method method : annotationType.getDeclaredMethods()) {
-            Object value = calculateValue(values, method);
+            Object value = calculateValue(source, method);
             validateReturnType(method, value);
             result.put(method.getName(), value);
+            source.remove(method.getName());
+        }
+
+        if (!source.isEmpty()) {
+            throw new InjectorException("Incorrectly named values are provided : " + source);
         }
 
         return result;
     }
 
     private static Object calculateValue(Map<String, Object> values, Method method) {
-        Object value = values.containsValue(method.getName()) ? values.get(method.getName())
-                                                              : method.getDefaultValue();
+        String name = method.getName();
+        Object value = values.getOrDefault(name, method.getDefaultValue());
 
         if (value == null) {
             throw new InjectorException("Missing value for " + method);
@@ -109,7 +111,7 @@ class AnnotationInvocationHandler implements Annotation, InvocationHandler, Seri
         }
 
         if (!returnType.isInstance(value)) {
-            throw new InjectorException("Incompatible type provided for " + method);
+            throw new InjectorException("Incompatible type " + value.getClass() + " provided for '" + method.getName() + "()' of " + method.getDeclaringClass());
         }
     }
 
