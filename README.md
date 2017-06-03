@@ -1,30 +1,25 @@
 [![Build Status](https://travis-ci.org/siy/booter-injector.svg?branch=master)](https://travis-ci.org/siy/booter-injector)
+
 # booter-injector
-Fast dependency injection library.
+Tiny and fast dependency injector for Java 8 and up.
 
 ## Overview
-This library is an opinionated, tiny and extremely fast DI container.
 
-### Opinionated
+Booter-injector is a yet another dependency injection container (framework, whatewer). 
+It's small (less than 50KB), fast (comparable to Java **new** call) and haze no external dependencies.
 
-- Minimalistic configuration.
-- Supports only constructor injection (no field injection)
-- Zero external dependency (everything is built-in)
-- Requires Java 8 and up
+## Motivation
+The project aims three main goals:
+1. Make dependency injection fast
+2.
+2. Facilitate best practices
 
-### Tiny
+First goal is achieved by adopting method handles and run-time generated lambdas and lazy evaluation.
 
-Packaged jar file is less than 50kB.
+## Getting Started
+### Adding dependency to Maven project
+(NOTE: library is not yet included into public Maven repos)
 
-### Extremely fast
-
-Run-time speed is crucial, especially if injector is used to create many instances at run time. 
-For most modern DI containers this is an anti-pattern. Booter-injector performance is comparable 
-to plan new call, so DI container can be used even in such a patterns.
-
-## Usage
-
-Maven:
 ~~~~
     <dependency>
       <groupId>io.booter</groupId>
@@ -33,5 +28,5 @@ Maven:
     </dependency>
 ~~~~
 
-## Getting Startet
+## Basic example
 
