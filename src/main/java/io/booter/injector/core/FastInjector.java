@@ -105,7 +105,7 @@ public class FastInjector implements Injector {
         Constructor<?> constructor = locateConstructorAndConfigureInjector(key);
 
         return (Supplier<T>) factory.create(constructor,
-                                            collectParameterSuppliers(constructor, dependencies));
+                                            collectParameterSuppliers(constructor, new ConcurrentHashMap<>(dependencies)));
     }
 
     @SuppressWarnings("unchecked")
