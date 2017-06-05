@@ -1,5 +1,13 @@
 package io.booter.injector.core;
 
+import java.lang.annotation.*;
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Supplier;
+import javax.annotation.PostConstruct;
+
 import io.booter.injector.AbstractModule;
 import io.booter.injector.Injector;
 import io.booter.injector.TypeToken;
@@ -7,15 +15,7 @@ import io.booter.injector.annotations.*;
 import io.booter.injector.core.exception.InjectorException;
 import org.junit.Test;
 
-import javax.annotation.PostConstruct;
-import java.lang.annotation.*;
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Supplier;
-
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FastInjectorTest {
     @Test
@@ -174,7 +174,7 @@ public class FastInjectorTest {
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfAttemptingConfigureWithNullClasses() throws Exception {
-        new FastInjector().configure(null);
+        new FastInjector().configure((Class<?>[]) null);
     }
 
     @Test(expected = InjectorException.class)
@@ -198,6 +198,7 @@ public class FastInjectorTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldAllowDirectManualConfigurationWithSingleton() throws Exception {
         Injector injector = new FastInjector();
         injector.bindSingleton(Key.of(List.class), ListOfIntegersImpl.class, false, false);
@@ -210,6 +211,7 @@ public class FastInjectorTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldAllowDirectManualConfigurationWithSupplier() throws Exception {
         Injector injector = new FastInjector();
         injector.bind(Key.of(List.class), ArrayList::new, true);
@@ -225,7 +227,22 @@ public class FastInjectorTest {
         new FastInjector().get(TwoAnnotatedConstructorClass.class);
     }
 
+    @Test(expected = InjectorException.class)
+    public void shouldDetectCycles() throws Exception {
+        new FastInjector().get(ClassWithCyclicDependencies.class);
+    }
+
     //---- Test classes
+    public static class ClassWithCyclicDependencies {
+        public ClassWithCyclicDependencies(Dependency1Class param) {
+        }
+    }
+
+    public static class Dependency1Class {
+        public Dependency1Class(ClassWithCyclicDependencies param) {
+        }
+    }
+
 
     public static class ClassWithoutPublicConstructor {
         ClassWithoutPublicConstructor() {
@@ -233,10 +250,10 @@ public class FastInjectorTest {
     }
     
     @ImplementedBy(SimpleInterface2.class)
-    public interface SimpleInterface {
+    interface SimpleInterface {
     }
 
-    public interface SimpleInterface2 {
+    interface SimpleInterface2 {
     }
 
     public static class ListOfStringsImpl extends ArrayList<String> implements ListOfStrings {
