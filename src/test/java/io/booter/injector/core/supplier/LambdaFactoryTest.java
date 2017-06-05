@@ -9,7 +9,6 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-//TODO: tests for parameter validation
 public class LambdaFactoryTest {
     private final Supplier<?>[] suppliers = new Supplier<?>[] {
             () -> 1234L,

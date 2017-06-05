@@ -90,8 +90,48 @@ public final class Suppliers {
     public static <T> Supplier<T> constructor(Constructor<T> constructor, Supplier<?>[] parameters) {
         validateParameters(constructor, parameters, 0);
 
-        return () -> safeCall(() -> constructor.newInstance(evaluateParameters(constructor, parameters, 0)),
-                              constructor);
+        return () -> safeCall(buildConstructorSupplier(constructor, parameters), constructor);
+    }
+
+    private static <T> ThrowingSupplier<T> buildConstructorSupplier(Constructor<T> constructor,
+                                                                    Supplier<?>[] suppliers) {
+        switch (constructor.getParameterCount()) {
+            case  0: return () -> constructor.newInstance();
+            case  1: return () -> constructor.newInstance(suppliers[0].get());
+
+            case  2: return () -> constructor.newInstance(suppliers[0].get(), suppliers[1].get());
+
+            case  3: return () -> constructor.newInstance(suppliers[0].get(), suppliers[1].get(), suppliers[2].get());
+
+            case  4: return () -> constructor.newInstance(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                          suppliers[3].get());
+
+            case  5: return () -> constructor.newInstance(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                          suppliers[3].get(), suppliers[4].get());
+
+            case  6: return () -> constructor.newInstance(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                          suppliers[3].get(), suppliers[4].get(), suppliers[5].get());
+
+            case  7: return () -> constructor.newInstance(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                          suppliers[3].get(), suppliers[4].get(), suppliers[5].get(),
+                                                          suppliers[6].get());
+
+            case  8: return () -> constructor.newInstance(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                          suppliers[3].get(), suppliers[4].get(), suppliers[5].get(),
+                                                          suppliers[6].get(), suppliers[7].get());
+
+            case  9: return () -> constructor.newInstance(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                          suppliers[3].get(), suppliers[4].get(), suppliers[5].get(),
+                                                          suppliers[6].get(), suppliers[7].get(), suppliers[8].get());
+
+            case 10: return () -> constructor.newInstance(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                          suppliers[3].get(), suppliers[4].get(), suppliers[5].get(),
+                                                          suppliers[6].get(), suppliers[7].get(), suppliers[8].get(),
+                                                          suppliers[9].get());
+            default:
+                //Should not happen, limits are already checked
+                return null;
+        }
     }
 
     public static <T> Supplier<T> fastConstructor(Constructor<T> constructor, Supplier<?>[] parameters) {

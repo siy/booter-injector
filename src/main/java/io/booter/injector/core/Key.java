@@ -1,8 +1,10 @@
 package io.booter.injector.core;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
-import java.util.*;
+import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import io.booter.injector.TypeToken;
@@ -31,8 +33,11 @@ public class Key {
     }
 
     public static Key of(Parameter parameter) {
+        Annotation[] annotations = parameter.getAnnotations();
+
         if (!parameter.getType().isAssignableFrom(Supplier.class)) {
-            return new Key(parameter.getParameterizedType(), false, parameter.getAnnotations());
+            return new Key(parameter.getParameterizedType(), false,
+                           parameter.getType(), findBindingAnnotation(annotations));
         }
 
         Type type = parameter.getParameterizedType();
@@ -41,7 +46,7 @@ public class Key {
             Type[] args = ((ParameterizedType) type).getActualTypeArguments();
 
             if (args.length > 0 && args[0] instanceof Class) {
-                return Key.of(args[0], true, parameter.getAnnotations());
+                return Key.of(args[0], true, annotations);
             }
         }
 
@@ -152,4 +157,3 @@ public class Key {
                                     + ((type == null) ? "null" : ("type " + type)));
     }
 }
-

@@ -1,6 +1,9 @@
 package io.booter.injector.core;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
@@ -184,17 +187,12 @@ public class FastInjector implements Injector {
         Supplier<?>[] suppliers = new Supplier[executable.getParameterCount()];
 
         for(Parameter p : executable.getParameters()) {
-            suppliers[i++] = lookupParameterSupplier(Key.of(p), dependencies);
+            Key key = Key.of(p);
+            Supplier<?> supplier = supplier(key, dependencies);
+            suppliers[i++] = key.isSupplier() ? () -> supplier : supplier;
         }
 
         return suppliers;
-    }
-
-    private Supplier<?> lookupParameterSupplier(Key parameterKey,
-                                                ConcurrentMap<Key, Key> dependencies) {
-        Supplier<?> supplier = supplier(parameterKey, dependencies);
-
-        return parameterKey.isSupplier() ? () -> supplier : supplier;
     }
 
     static Constructor<?> locateConstructor(Key key) {
@@ -215,11 +213,13 @@ public class FastInjector implements Injector {
         Constructor<?> singleConstructor = null;
         boolean singleConstructorIsPending = true;
 
-        for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
-            if (!Modifier.isPublic(constructor.getModifiers())) {
-                continue;
-            }
+        Constructor<?>[] constructors = clazz.getConstructors();
 
+        if (constructors.length == 1) {
+            return constructors[0];
+        }
+
+        for (Constructor<?> constructor : constructors) {
             if (!constructor.isAnnotationPresent(Inject.class)) {
                 if (constructor.getParameterCount() == 0) {
                     defaultConstructor = constructor;

@@ -1,16 +1,14 @@
 package io.booter.injector.core.supplier;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
+import io.booter.injector.core.exception.InjectorException;
 import org.junit.Test;
 
-import io.booter.injector.core.exception.InjectorException;
+import static org.assertj.core.api.Assertions.assertThat;
 
-//TODO: tests for parameter validation
 public class LambdaFactoryMethodTest {
     private final Supplier<?>[] parameters = new Supplier[]{
             () -> null,

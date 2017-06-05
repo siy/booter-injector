@@ -1,21 +1,17 @@
 package io.booter.injector.core.supplier;
 
 import java.lang.annotation.Annotation;
-import java.lang.invoke.CallSite;
-import java.lang.invoke.LambdaConversionException;
-import java.lang.invoke.LambdaMetafactory;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
+import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
-import static io.booter.injector.core.supplier.Utils.*;
-
 import io.booter.injector.core.exception.InjectorException;
+
+import static io.booter.injector.core.supplier.Utils.safeCall;
+import static io.booter.injector.core.supplier.Utils.validateParameters;
 
 /**
  * This class is a convenient run-time generator of lambdas which can be used to create instances of objects or call
@@ -137,15 +133,6 @@ public class LambdaFactory {
                                              target,
                                              target.type());
     }
-
-    private static Object[] evaluateParameters(int parameterCount, Supplier<?>[] parameters, int offset) {
-        Object[] values = new Object[parameterCount];
-        for (int i = 0; i < parameterCount; i++) {
-            values[i] = parameters[i + offset].get();
-        }
-        return values;
-    }
-
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static<T> Supplier<T> createLambdaSupplier(Supplier<?>[] suppliers, CallSite callSite, int parameterCount) throws Throwable {
