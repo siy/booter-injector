@@ -1,6 +1,7 @@
 package io.booter.injector.core.supplier;
 
 import io.booter.injector.core.beans.ClassWith1ParameterConstructor;
+import io.booter.injector.core.beans.ClassWith2ParametersConstructor;
 import io.booter.injector.core.beans.ClassWithDefaultConstructor;
 import io.booter.injector.core.exception.InjectorException;
 import org.junit.Test;
@@ -167,13 +168,13 @@ public class SuppliersTest {
 
     @Test
     public void shouldCreateConstructor() throws Exception {
-        Constructor<ClassWithDefaultConstructor> constructor = ClassWithDefaultConstructor.class.getDeclaredConstructor();
-        Supplier<?>[] parameters = new Supplier[0];
+        Constructor<ClassWith2ParametersConstructor> constructor = (Constructor<ClassWith2ParametersConstructor>) ClassWith2ParametersConstructor.class.getDeclaredConstructors()[0];
+        Supplier<?>[] parameters = new Supplier[] { () -> Long.valueOf(592L), () -> "aBc"};
 
-        Supplier<ClassWithDefaultConstructor> supplier = Suppliers.constructor(constructor, parameters);
+        Supplier<ClassWith2ParametersConstructor> supplier = Suppliers.constructor(constructor, parameters);
 
         assertThat(supplier).isNotNull();
-        assertThat(supplier.get()).isInstanceOf(ClassWithDefaultConstructor.class);
+        assertThat(supplier.get()).isInstanceOf(ClassWith2ParametersConstructor.class);
     }
 
     public String method1(int val) {

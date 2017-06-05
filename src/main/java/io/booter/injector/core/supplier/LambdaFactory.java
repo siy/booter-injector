@@ -75,10 +75,26 @@ public class LambdaFactory {
      */
     public static MethodHandle create(Method method) {
         try {
+            method.setAccessible(true);
             return LOOKUP.unreflect(method);
         } catch (Exception e) {
             throw new InjectorException("Unable to create method handle for " + method, e);
         }
+    }
+
+    /**
+     * Create supplier for the provided constructor. Created supplier uses {@link MethodHandle} to create instance.
+     *
+     * @param constructor
+     *          Constructor to convert to supplier
+     * @param suppliers
+     *          Array of suppliers for constructor parameters
+     *
+     * @return  Created supplier
+     */
+    public static <T> Supplier<T> createMethodHandleSupplier(Constructor<T> constructor, Supplier<?>[] suppliers) {
+        validateParameters(constructor, suppliers, 0);
+        return safeCall(() -> internalMethodHandleCreate(constructor, suppliers), constructor);
     }
 
     /**
@@ -115,11 +131,12 @@ public class LambdaFactory {
 
     private static <T> Supplier<T> internalCreate(Executable constructor, Supplier<?>[] suppliers, boolean isMethod) throws Throwable {
         int parameterCount = constructor.getParameterCount() + (isMethod ? 1:0);
-        return createSupplier(suppliers, createCallSite(constructor, parameterCount, isMethod), parameterCount);
+        return createLambdaSupplier(suppliers, createCallSite(constructor, parameterCount, isMethod), parameterCount);
     }
 
     private static CallSite createCallSite(Executable constructor, int parameterCount, boolean isMethod)
             throws ReflectiveOperationException, LambdaConversionException {
+        constructor.setAccessible(true);
 
         if (parameterCount > MAX_PARAMETER_COUNT) {
             throw new InjectorException("More than " + (MAX_PARAMETER_COUNT + (isMethod ? 1 : 0))
@@ -136,8 +153,43 @@ public class LambdaFactory {
                                              target.type());
     }
 
+    private static <T> Supplier<T> internalMethodHandleCreate(Constructor<T> constructor, Supplier<?>[] suppliers) throws Throwable {
+        constructor.setAccessible(true);
+        MethodHandle handle = LOOKUP.unreflectConstructor(constructor);
+        return createMethodHandleSupplier(handle, suppliers, constructor, constructor.getParameterCount());
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static<T> Supplier<T> createSupplier(Supplier<?>[] suppliers, CallSite callSite, int parameterCount) throws Throwable {
+    private static<T> Supplier<T> createMethodHandleSupplier(MethodHandle handle, Supplier<?>[] suppliers, Executable executable, int parameterCount) throws Throwable {
+        switch (parameterCount) {
+            case 0: { return () -> safeCall(() -> (T) handle.invokeWithArguments(), executable); }
+            case 1: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get()), executable); }
+            case 2: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get()), executable); }
+            case 3: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get()), executable); }
+            case 4: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get()), executable); }
+            case 5: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get(), suppliers[4].get()), executable); }
+            case 6: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get(), suppliers[4].get(), suppliers[5].get()), executable); }
+            case 7: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get(), suppliers[4].get(), suppliers[5].get(), suppliers[6].get()), executable); }
+            case 8: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get(), suppliers[4].get(), suppliers[5].get(), suppliers[6].get(), suppliers[7].get()), executable); }
+            case 9: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get(), suppliers[4].get(), suppliers[5].get(), suppliers[6].get(), suppliers[7].get(), suppliers[8].get()), executable); }
+            case 10:{ return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get(), suppliers[4].get(), suppliers[5].get(), suppliers[6].get(), suppliers[7].get(), suppliers[8].get(), suppliers[9].get()), executable); }
+            default:
+                //Should not happen, limits are already checked
+                return null;
+        }
+    }
+
+    private static Object[] evaluateParameters(int parameterCount, Supplier<?>[] parameters, int offset) {
+        Object[] values = new Object[parameterCount];
+        for (int i = 0; i < parameterCount; i++) {
+            values[i] = parameters[i + offset].get();
+        }
+        return values;
+    }
+
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static<T> Supplier<T> createLambdaSupplier(Supplier<?>[] suppliers, CallSite callSite, int parameterCount) throws Throwable {
         switch (parameterCount) {
             case 0: {
                 Invocable0<T> invocable = (Invocable0<T>) callSite.getTarget().invokeExact();

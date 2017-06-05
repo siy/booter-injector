@@ -91,6 +91,7 @@ public final class Suppliers {
 
         return () -> safeCall(() -> constructor.newInstance(evaluateParameters(constructor, parameters, 0)),
                               constructor);
+//        return LambdaFactory.createMethodHandleSupplier(constructor, parameters);
     }
 
     public static <T> Supplier<T> fastConstructor(Constructor<T> constructor, Supplier<?>[] parameters) {

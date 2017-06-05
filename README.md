@@ -18,7 +18,10 @@ First goal is achieved by adopting method handles and run-time generated lambdas
 Second goal is achieved by building configuration at run time, automatically detecting proper constructor in most 
 cases and by favoring convention over configuration.
 Third goal is achieved by limiting injection support to constructor injection only and using **@ConfiguredBy** 
-annotation.   
+annotation.
+
+## Known limitations
+1. Variable argument list in constructor parameters may cause problems for the injector. Please, use plain arrays instead.   
 
 ## Getting Started
 ### Adding dependency to Maven project

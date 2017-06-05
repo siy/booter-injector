@@ -273,7 +273,7 @@ public class FastInjectorTest {
 
     @ConfiguredBy(LongListModule.class)
     public static class ListOfLongsImpl extends ArrayList<Long> implements ListOfLongs {
-        public ListOfLongsImpl(Long ... initial) {
+        public ListOfLongsImpl(Long... initial) {
             super(Arrays.asList(initial));
         }
     }
@@ -287,7 +287,7 @@ public class FastInjectorTest {
 
     @ConfiguredBy(IntegerListModule.class)
     public static class ListOfIntegersImpl extends ArrayList<Integer> implements ListOfIntegers {
-        public ListOfIntegersImpl(Integer ... initial) {
+        public ListOfIntegersImpl(Integer[] initial) {
             super(Arrays.asList(initial));
         }
     }
