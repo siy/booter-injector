@@ -20,9 +20,6 @@ cases and by favoring convention over configuration.
 Third goal is achieved by limiting injection support to constructor injection only and using **@ConfiguredBy** 
 annotation.
 
-## Known limitations
-1. Variable argument list in constructor parameters may cause problems for the injector. Please, use plain arrays instead.   
-
 ## Getting Started
 ### Adding dependency to Maven project
 (NOTE: library is not yet included into public Maven repos)

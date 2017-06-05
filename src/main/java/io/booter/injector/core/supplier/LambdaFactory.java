@@ -83,21 +83,6 @@ public class LambdaFactory {
     }
 
     /**
-     * Create supplier for the provided constructor. Created supplier uses {@link MethodHandle} to create instance.
-     *
-     * @param constructor
-     *          Constructor to convert to supplier
-     * @param suppliers
-     *          Array of suppliers for constructor parameters
-     *
-     * @return  Created supplier
-     */
-    public static <T> Supplier<T> createMethodHandleSupplier(Constructor<T> constructor, Supplier<?>[] suppliers) {
-        validateParameters(constructor, suppliers, 0);
-        return safeCall(() -> internalMethodHandleCreate(constructor, suppliers), constructor);
-    }
-
-    /**
      * Create lambda for the provided method. In the array of parameter suppliers first parameter must be a
      * supplier of instances of class to which passed method belongs.
      *
@@ -151,32 +136,6 @@ public class LambdaFactory {
                                              target.type().generic(),
                                              target,
                                              target.type());
-    }
-
-    private static <T> Supplier<T> internalMethodHandleCreate(Constructor<T> constructor, Supplier<?>[] suppliers) throws Throwable {
-        constructor.setAccessible(true);
-        MethodHandle handle = LOOKUP.unreflectConstructor(constructor);
-        return createMethodHandleSupplier(handle, suppliers, constructor, constructor.getParameterCount());
-    }
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static<T> Supplier<T> createMethodHandleSupplier(MethodHandle handle, Supplier<?>[] suppliers, Executable executable, int parameterCount) throws Throwable {
-        switch (parameterCount) {
-            case 0: { return () -> safeCall(() -> (T) handle.invokeWithArguments(), executable); }
-            case 1: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get()), executable); }
-            case 2: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get()), executable); }
-            case 3: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get()), executable); }
-            case 4: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get()), executable); }
-            case 5: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get(), suppliers[4].get()), executable); }
-            case 6: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get(), suppliers[4].get(), suppliers[5].get()), executable); }
-            case 7: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get(), suppliers[4].get(), suppliers[5].get(), suppliers[6].get()), executable); }
-            case 8: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get(), suppliers[4].get(), suppliers[5].get(), suppliers[6].get(), suppliers[7].get()), executable); }
-            case 9: { return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get(), suppliers[4].get(), suppliers[5].get(), suppliers[6].get(), suppliers[7].get(), suppliers[8].get()), executable); }
-            case 10:{ return () -> safeCall(() -> (T) handle.invokeWithArguments(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(), suppliers[3].get(), suppliers[4].get(), suppliers[5].get(), suppliers[6].get(), suppliers[7].get(), suppliers[8].get(), suppliers[9].get()), executable); }
-            default:
-                //Should not happen, limits are already checked
-                return null;
-        }
     }
 
     private static Object[] evaluateParameters(int parameterCount, Supplier<?>[] parameters, int offset) {
