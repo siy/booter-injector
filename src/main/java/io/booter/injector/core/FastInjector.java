@@ -5,7 +5,9 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
@@ -68,7 +70,7 @@ public class FastInjector implements Injector {
     @Override
     public <T> Injector bindSingleton(Key key, Class<T> implementation, boolean eager, boolean throwIfExists) {
         Key implKey = Key.of(implementation);
-        ConcurrentMap<Key, Key> dependencies = new ConcurrentHashMap<>();
+        Map<Key, Key> dependencies = new HashMap<>();
         dependencies.put(key, key);
 
         Constructor<T> constructor = (Constructor<T>) locateConstructorAndConfigureInjector(implKey);
@@ -102,23 +104,25 @@ public class FastInjector implements Injector {
     }
 
     @SuppressWarnings("unchecked")
-    <T> Supplier<T> collectBindings(Key key, ConcurrentMap<Key, Key> dependencies) {
+    <T> Supplier<T> collectBindings(Key key, Map<Key, Key> dependencies) {
         Constructor<?> constructor = locateConstructorAndConfigureInjector(key);
 
         return (Supplier<T>) SupplierFactory.createInstanceSupplier(constructor,
-                                            buildConstructorCallParameters(constructor, new ConcurrentHashMap<>(dependencies)));
+                                            buildConstructorCallParameters(constructor, new HashMap<>(dependencies)));
     }
 
     @SuppressWarnings("unchecked")
-    private <T> Supplier<T> supplier(Key key, ConcurrentMap<Key, Key> dependencies) {
+    private <T> Supplier<T> supplier(Key key, Map<Key, Key> dependencies) {
         if (!key.isSupplier()) {
-            dependencies.computeIfPresent(key, (k1, k2) -> {
+            if (dependencies.containsKey(key)) {
                 throw new InjectorException("Cycle detected for " + key);
-            });
+            }
             dependencies.put(key, key);
         }
 
-        return (Supplier<T>) bindings.computeIfAbsent(key, (k) -> factoryLazy(() -> collectBindings(key, dependencies)));
+        final Map<Key, Key> local = new HashMap<>(dependencies);
+
+        return (Supplier<T>) bindings.computeIfAbsent(key, (k) -> factoryLazy(() -> collectBindings(key, local)));
     }
 
     private Constructor<?> locateConstructorAndConfigureInjector(Key key) {
@@ -157,7 +161,7 @@ public class FastInjector implements Injector {
     }
 
     private <T> void addMethodBinding(Method method, Supplier<T> instanceSupplier) {
-        ConcurrentHashMap<Key, Key> dependencies = new ConcurrentHashMap<>();
+        HashMap<Key, Key> dependencies = new HashMap<>();
         Key key = Key.of(method.getGenericReturnType(), method.getAnnotations());
 
         dependencies.put(key, key);
@@ -169,7 +173,7 @@ public class FastInjector implements Injector {
     }
 
     private List<Supplier<?>> buildMethodCallParameters(Method method, Supplier<?> instanceSupplier,
-                                                        ConcurrentHashMap<Key, Key> dependencies) {
+                                                        HashMap<Key, Key> dependencies) {
         List<Supplier<?>> suppliers = new ArrayList<>(INITIAL_CAPACITY);
         suppliers.add(instanceSupplier);
         collectParameterSuppliers(method, dependencies, suppliers);
@@ -178,12 +182,12 @@ public class FastInjector implements Injector {
     }
 
     private List<Supplier<?>> buildConstructorCallParameters(Executable executable,
-                                                             ConcurrentMap<Key, Key> dependencies) {
+                                                             Map<Key, Key> dependencies) {
         return collectParameterSuppliers(executable, dependencies, new ArrayList<>(INITIAL_CAPACITY));
     }
 
     private List<Supplier<?>> collectParameterSuppliers(Executable executable,
-                                                        ConcurrentMap<Key, Key> dependencies,
+                                                        Map<Key, Key> dependencies,
                                                         List<Supplier<?>> suppliers) {
         for(Parameter p : executable.getParameters()) {
             Key key = Key.of(p);
