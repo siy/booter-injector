@@ -1,11 +1,5 @@
 package io.booter.injector.core.supplier;
 
-import io.booter.injector.core.beans.ClassWith1ParameterConstructor;
-import io.booter.injector.core.beans.ClassWith2ParametersConstructor;
-import io.booter.injector.core.beans.ClassWithDefaultConstructor;
-import io.booter.injector.core.exception.InjectorException;
-import org.junit.Test;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -15,7 +9,13 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.assertj.core.api.Assertions.*;
+import io.booter.injector.core.beans.ClassWith1ParameterConstructor;
+import io.booter.injector.core.beans.ClassWith2ParametersConstructor;
+import io.booter.injector.core.beans.ClassWithDefaultConstructor;
+import io.booter.injector.core.exception.InjectorException;
+import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class SuppliersTest {
     private static final int NUM_THREADS = Runtime.getRuntime().availableProcessors();
@@ -64,13 +64,13 @@ public class SuppliersTest {
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfNullIsPassedToInstantiator1() throws Exception {
-        Suppliers.instantiator(null, new Supplier[0]);
+        Suppliers.methodSupplier(null, new Supplier[0]);
     }
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfNullIsPassedToInstantiator2() throws Exception {
         Method method = getClass().getDeclaredMethod("method1", int.class);
-        Suppliers.instantiator(method, null);
+        Suppliers.methodSupplier(method, (Supplier<?>[]) null);
     }
 
     @Test(expected = InjectorException.class)
@@ -79,24 +79,24 @@ public class SuppliersTest {
         Supplier<?>[] parameters = new Supplier[1];
         parameters[0] = () -> this;
 
-        Suppliers.instantiator(method, parameters);
+        Suppliers.methodSupplier(method, parameters);
     }
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfNullIsPassedToConstructor1() throws Exception {
-        Suppliers.constructor(null, new Supplier[0]);
+        Suppliers.constructorSupplier(null, new Supplier[0]);
     }
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfNullIsPassedToConstructor2() throws Exception {
         Constructor<ClassWithDefaultConstructor> constructor = ClassWithDefaultConstructor.class.getDeclaredConstructor();
-        Suppliers.constructor(constructor, null);
+        Suppliers.constructorSupplier(constructor, (Supplier<?>[]) null);
     }
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfNotEnoughParametersPassedToConstructor() throws Exception {
         Constructor<ClassWith1ParameterConstructor> constructor = ClassWith1ParameterConstructor.class.getDeclaredConstructor(Long.class);
-        Suppliers.constructor(constructor, new Supplier[0]);
+        Suppliers.constructorSupplier(constructor, new Supplier[0]);
     }
 
     @Test
@@ -135,7 +135,7 @@ public class SuppliersTest {
         parameters[0] = () -> this;
         parameters[1] = () -> counter.incrementAndGet();
 
-        Supplier<String> supplier = Suppliers.instantiator(method, parameters);
+        Supplier<String> supplier = Suppliers.methodSupplier(method, parameters);
 
         assertThat(supplier.get()).isEqualTo("1");
         assertThat(supplier.get()).isEqualTo("2");
@@ -171,7 +171,7 @@ public class SuppliersTest {
         Constructor<ClassWith2ParametersConstructor> constructor = (Constructor<ClassWith2ParametersConstructor>) ClassWith2ParametersConstructor.class.getDeclaredConstructors()[0];
         Supplier<?>[] parameters = new Supplier[] { () -> Long.valueOf(592L), () -> "aBc"};
 
-        Supplier<ClassWith2ParametersConstructor> supplier = Suppliers.constructor(constructor, parameters);
+        Supplier<ClassWith2ParametersConstructor> supplier = Suppliers.constructorSupplier(constructor, parameters);
 
         assertThat(supplier).isNotNull();
         assertThat(supplier.get()).isInstanceOf(ClassWith2ParametersConstructor.class);

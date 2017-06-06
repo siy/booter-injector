@@ -1,8 +1,8 @@
 package io.booter.injector.core.supplier;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -72,25 +72,75 @@ public final class Suppliers {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> Supplier<T> instantiator(Method method, Supplier<?>[] parameters) {
+    public static <T> Supplier<T> methodSupplier(Method method, List<Supplier<?>> parameters) {
         validateParameters(method, parameters, 1);
 
-        return () -> safeCall(() -> (T) method.invoke(parameters[0].get(),
-                                                      evaluateParameters(method, parameters, 1)), method);
+        return () -> safeCall(buildMethodSupplier(method, parameters.toArray(new Supplier[parameters.size()])), method);
     }
 
-    private static Object[] evaluateParameters(Executable method, Supplier<?>[] parameters, int offset) {
-        Object[] values = new Object[method.getParameterCount()];
-        for (int i = 0; i < values.length; i++) {
-            values[i] = parameters[i + offset].get();
+    //TODO: used by tests only!!!
+    @SuppressWarnings("unchecked")
+    public static <T> Supplier<T> methodSupplier(Method method, Supplier<?>[] parameters) {
+        validateParameters(method, parameters, 1);
+
+        return () -> safeCall(buildMethodSupplier(method, parameters), method);
+    }
+
+
+    private static <T> ThrowingSupplier<T> buildMethodSupplier(Method method,
+                                                               Supplier<?>[] suppliers) {
+        switch (method.getParameterCount()) {
+            case  0: return () -> (T) method.invoke(suppliers[0].get());
+
+            case  1: return () -> (T) method.invoke(suppliers[0].get(), suppliers[1].get());
+
+            case  2: return () -> (T) method.invoke(suppliers[0].get(), suppliers[1].get(), suppliers[2].get());
+
+            case  3: return () -> (T) method.invoke(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                          suppliers[3].get());
+
+            case  4: return () -> (T) method.invoke(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                          suppliers[3].get(), suppliers[4].get());
+
+            case  5: return () -> (T) method.invoke(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                          suppliers[3].get(), suppliers[4].get(), suppliers[5].get());
+
+            case  6: return () -> (T) method.invoke(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                          suppliers[3].get(), suppliers[4].get(), suppliers[5].get(),
+                                                          suppliers[6].get());
+
+            case  7: return () -> (T) method.invoke(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                          suppliers[3].get(), suppliers[4].get(), suppliers[5].get(),
+                                                          suppliers[6].get(), suppliers[7].get());
+
+            case  8: return () -> (T) method.invoke(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                          suppliers[3].get(), suppliers[4].get(), suppliers[5].get(),
+                                                          suppliers[6].get(), suppliers[7].get(), suppliers[8].get());
+
+            case  9: return () -> (T) method.invoke(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                     suppliers[3].get(), suppliers[4].get(), suppliers[5].get(),
+                                                     suppliers[6].get(), suppliers[7].get(), suppliers[8].get(),
+                                                     suppliers[9].get());
+            case 10: return () -> (T) method.invoke(suppliers[0].get(), suppliers[1].get(), suppliers[2].get(),
+                                                     suppliers[3].get(), suppliers[4].get(), suppliers[5].get(),
+                                                     suppliers[6].get(), suppliers[7].get(), suppliers[8].get(),
+                                                     suppliers[9].get(), suppliers[10].get());
+            default:
+                //Should not happen, limits are already checked
+                return null;
         }
-        return values;
     }
 
-    public static <T> Supplier<T> constructor(Constructor<T> constructor, Supplier<?>[] parameters) {
+    public static <T> Supplier<T> constructorSupplier(Constructor<T> constructor, Supplier<?>[] parameters) {
         validateParameters(constructor, parameters, 0);
 
         return () -> safeCall(buildConstructorSupplier(constructor, parameters), constructor);
+    }
+
+    public static <T> Supplier<T> constructorSupplier(Constructor<T> constructor, List<Supplier<?>> parameters) {
+        validateParameters(constructor, parameters, 0);
+
+        return () -> safeCall(buildConstructorSupplier(constructor, parameters.toArray(new Supplier[parameters.size()])), constructor);
     }
 
     private static <T> ThrowingSupplier<T> buildConstructorSupplier(Constructor<T> constructor,
@@ -138,7 +188,15 @@ public final class Suppliers {
         return LambdaFactory.create(constructor, parameters);
     }
 
+    public static <T> Supplier<T> fastConstructor(Constructor<T> constructor, List<Supplier<?>> parameters) {
+        return LambdaFactory.create(constructor, parameters.toArray(new Supplier[parameters.size()]));
+    }
+
     public static <T> Supplier<T> fastMethodConstructor(Method method, Supplier<?>[] parameters) {
         return LambdaFactory.create(method, parameters);
+    }
+
+    public static <T> Supplier<T> fastMethodConstructor(Method method, List<Supplier<?>> parameters) {
+        return LambdaFactory.create(method, parameters.toArray(new Supplier[parameters.size()]));
     }
 }

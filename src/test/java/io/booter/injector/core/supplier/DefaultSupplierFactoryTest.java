@@ -1,16 +1,17 @@
 package io.booter.injector.core.supplier;
 
-import io.booter.injector.core.SupplierFactory;
-import io.booter.injector.core.beans.*;
-import io.booter.injector.core.exception.InjectorException;
-import org.junit.Test;
-
 import java.lang.reflect.Constructor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static org.assertj.core.api.Assertions.*;
+import io.booter.injector.core.SupplierFactory;
+import io.booter.injector.core.beans.*;
+import io.booter.injector.core.exception.InjectorException;
+import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class DefaultSupplierFactoryTest {
     private static final Supplier<?>[] EMPTY = new Supplier[0];
@@ -22,7 +23,7 @@ public class DefaultSupplierFactoryTest {
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfNullPassedAsPatameterToCreate2() throws Exception {
-        new DefaultSupplierFactory().create(constructor(ClassWithDefaultConstructor.class), null);
+        new DefaultSupplierFactory().create(constructor(ClassWithDefaultConstructor.class), (Supplier<?>[]) null);
     }
 
     @Test(expected = InjectorException.class)
@@ -37,7 +38,8 @@ public class DefaultSupplierFactoryTest {
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfNullPassedAsPatameterToCreateSingleton2() throws Exception {
-        new DefaultSupplierFactory().createSingleton(constructor(ClassWithDefaultConstructor.class), null, false);
+        new DefaultSupplierFactory().createSingleton(constructor(ClassWithDefaultConstructor.class),
+                                                     (Supplier<?>[]) null, false);
     }
 
     @Test(expected = InjectorException.class)
@@ -223,7 +225,8 @@ public class DefaultSupplierFactoryTest {
         };
         Supplier<?>[] parameters = new Supplier[] { () -> consumer};
 
-        Supplier<ClassWithPostConstruct> supplier = factory.createSingleton(constructor(ClassWithPostConstruct.class), parameters, true);
+        Supplier<ClassWithPostConstruct> supplier = factory.createSingleton(constructor(ClassWithPostConstruct.class),
+                                                                            parameters, true);
 
         assertThat(supplier).isNotNull();
         assertThat(counter1.get()).isEqualTo(1);

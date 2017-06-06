@@ -16,7 +16,7 @@ import static io.booter.injector.core.supplier.Utils.validateParameters;
 /**
  * This class is a convenient run-time generator of lambdas which can be used to create instances of objects or call
  * methods of classes. By convention all parameters required to call methods and constructors are passed as instances
- * of {@link Supplier} class. For constructors array of input suppliers corresponds to constructor parameters.
+ * of {@link Supplier} class. For constructors array of input suppliers corresponds to constructorSupplier parameters.
  * For methods array of suppliers consists of provider of instance for which method should be invoked and remaining
  * suppliers provide rest of method parameters.
  */
@@ -96,12 +96,12 @@ public class LambdaFactory {
     }
 
     /**
-     * Create lambda for the provided constructor.
+     * Create lambda for the provided constructorSupplier.
      *
      * @param constructor
      *          Constructor to convert to lambda
      * @param suppliers
-     *          Array of suppliers of constructor parameters.
+     *          Array of suppliers of constructorSupplier parameters.
      *
      * @return  Created supplier.
      */

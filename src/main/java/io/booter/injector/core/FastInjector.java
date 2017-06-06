@@ -4,6 +4,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
@@ -20,6 +22,7 @@ import io.booter.injector.core.supplier.DefaultSupplierFactory;
 import static io.booter.injector.core.supplier.Suppliers.*;
 
 public class FastInjector implements Injector {
+    public static final int INITIAL_CAPACITY = 10;
     private final ConcurrentMap<Key, Supplier<?>> bindings = new ConcurrentHashMap<>();
     private final ConcurrentMap<Class<?>, Class<?>> modules = new ConcurrentHashMap<>();
     private final SupplierFactory factory;
@@ -76,7 +79,7 @@ public class FastInjector implements Injector {
         Constructor<T> constructor = (Constructor<T>) locateConstructorAndConfigureInjector(implKey);
 
         Supplier<T> supplier = factory.createSingleton(constructor,
-                                                       collectParameterSuppliers(constructor, dependencies),
+                                                       buildConstructorCallParameters(constructor, dependencies),
                                                        eager);
 
         return checkForExistingBinding(key, throwIfExists, bindings.putIfAbsent(key, supplier));
@@ -108,7 +111,7 @@ public class FastInjector implements Injector {
         Constructor<?> constructor = locateConstructorAndConfigureInjector(key);
 
         return (Supplier<T>) factory.create(constructor,
-                                            collectParameterSuppliers(constructor, new ConcurrentHashMap<>(dependencies)));
+                                            buildConstructorCallParameters(constructor, new ConcurrentHashMap<>(dependencies)));
     }
 
     @SuppressWarnings("unchecked")
@@ -164,34 +167,34 @@ public class FastInjector implements Injector {
 
         dependencies.put(key, key);
 
-        Supplier<?>[] parameters = buildMethodCallParameters(method, instanceSupplier, dependencies);
+        List<Supplier<?>> parameters = buildMethodCallParameters(method, instanceSupplier, dependencies);
 
-        bindings.computeIfAbsent(key, (k) -> enhancing(instantiator(method, parameters),
+        bindings.computeIfAbsent(key, (k) -> enhancing(methodSupplier(method, parameters),
                                                        () -> fastMethodConstructor(method, parameters)));
     }
 
-    private Supplier<?>[] buildMethodCallParameters(Method method, Supplier<?> instanceSupplier,
-                                                    ConcurrentHashMap<Key, Key> dependencies) {
-        Supplier<?>[] methodParameters = collectParameterSuppliers(method, dependencies);
-        Supplier<?>[] invocationParameters = new Supplier<?>[methodParameters.length + 1];
+    private List<Supplier<?>> buildMethodCallParameters(Method method, Supplier<?> instanceSupplier,
+                                                        ConcurrentHashMap<Key, Key> dependencies) {
+        List<Supplier<?>> suppliers = new ArrayList<>(INITIAL_CAPACITY);
+        suppliers.add(instanceSupplier);
+        collectParameterSuppliers(method, dependencies, suppliers);
 
-        System.arraycopy(methodParameters, 0, invocationParameters, 1, methodParameters.length);
-        invocationParameters[0] = instanceSupplier;
-
-        return invocationParameters;
+        return suppliers;
     }
 
-    private Supplier<?>[] collectParameterSuppliers(Executable executable,
-                                                    ConcurrentMap<Key, Key> dependencies) {
-        int i = 0;
-        Supplier<?>[] suppliers = new Supplier[executable.getParameterCount()];
+    private List<Supplier<?>> buildConstructorCallParameters(Executable executable,
+                                                             ConcurrentMap<Key, Key> dependencies) {
+        return collectParameterSuppliers(executable, dependencies, new ArrayList<>(INITIAL_CAPACITY));
+    }
 
+    private List<Supplier<?>> collectParameterSuppliers(Executable executable,
+                                                        ConcurrentMap<Key, Key> dependencies,
+                                                        List<Supplier<?>> suppliers) {
         for(Parameter p : executable.getParameters()) {
             Key key = Key.of(p);
             Supplier<?> supplier = supplier(key, dependencies);
-            suppliers[i++] = key.isSupplier() ? () -> supplier : supplier;
+            suppliers.add(key.isSupplier() ? () -> supplier : supplier);
         }
-
         return suppliers;
     }
 
@@ -240,7 +243,7 @@ public class FastInjector implements Injector {
             if (instanceConstructor != null) {
                 throw new InjectorException("Class "
                      + clazz.getCanonicalName()
-                     + " has more than one constructor annotated with @Inject");
+                     + " has more than one constructorSupplier annotated with @Inject");
             }
 
             instanceConstructor = constructor;
@@ -251,7 +254,7 @@ public class FastInjector implements Injector {
                                                                  : instanceConstructor;
 
         if (constructor == null) {
-            throw new InjectorException("Unable to locate suitable constructor for " + key);
+            throw new InjectorException("Unable to locate suitable constructorSupplier for " + key);
         }
 
         return constructor;

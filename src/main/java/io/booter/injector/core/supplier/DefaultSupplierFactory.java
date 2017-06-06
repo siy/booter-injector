@@ -2,6 +2,7 @@ package io.booter.injector.core.supplier;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Constructor;
+import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.PostConstruct;
 
@@ -11,29 +12,52 @@ import io.booter.injector.core.SupplierFactory;
 import io.booter.injector.core.exception.InjectorException;
 
 import static io.booter.injector.core.supplier.Suppliers.*;
-import static io.booter.injector.core.supplier.Utils.*;
+import static io.booter.injector.core.supplier.Utils.validateParameters;
 
 public class DefaultSupplierFactory implements SupplierFactory {
     public DefaultSupplierFactory() {
     }
 
     @Override
+    public <T> Supplier<T> create(Constructor<T> constructor, List<Supplier<?>> parameters) {
+        validateParameters(constructor, parameters, 0);
+
+        Supplier<T> factory = tryWrapWithPostConstruct(constructor,
+                                                       enhancing(constructorSupplier(constructor, parameters),
+                                                                 () -> fastConstructor(constructor, parameters)));
+
+        return tryBuildSingleton(factory, constructor.getDeclaringClass());
+    }
+
+    //TODO: used by tests only!!!
+    @Override
     public <T> Supplier<T> create(Constructor<T> constructor, Supplier<?>[] parameters) {
         validateParameters(constructor, parameters, 0);
 
         Supplier<T> factory = tryWrapWithPostConstruct(constructor,
-                                                       enhancing(constructor(constructor, parameters),
+                                                       enhancing(constructorSupplier(constructor, parameters),
                                                                  () -> fastConstructor(constructor, parameters)));
 
         return tryBuildSingleton(factory, constructor.getDeclaringClass());
     }
 
     @Override
+    public <T> Supplier<T> createSingleton(Constructor<T> constructor, List<Supplier<?>> parameters, boolean eager) {
+        validateParameters(constructor, parameters, 0);
+
+        Supplier<T> factory = tryWrapWithPostConstruct(constructor,
+                                                       constructorSupplier(constructor, parameters));
+
+        return singleton(factory, eager);
+    }
+
+    //TODO: used by tests only!!!
+    @Override
     public <T> Supplier<T> createSingleton(Constructor<T> constructor, Supplier<?>[] parameters, boolean eager) {
         validateParameters(constructor, parameters, 0);
 
         Supplier<T> factory = tryWrapWithPostConstruct(constructor,
-                                                       constructor(constructor, parameters));
+                                                       constructorSupplier(constructor, parameters));
 
         return singleton(factory, eager);
     }

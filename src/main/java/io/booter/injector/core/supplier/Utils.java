@@ -1,6 +1,7 @@
 package io.booter.injector.core.supplier;
 
 import java.lang.reflect.Executable;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -25,6 +26,14 @@ final class Utils {
         validateNotNull(method, suppliers);
 
         if (suppliers.length < method.getParameterCount() + extraParameters) {
+            throw new InjectorException("Passed number of parameters is incorrect for " + method);
+        }
+    }
+
+    public static void validateParameters(Executable method, List<Supplier<?>> suppliers, int extraParameters) {
+        validateNotNull(method, suppliers);
+
+        if (suppliers.size() < method.getParameterCount() + extraParameters) {
             throw new InjectorException("Passed number of parameters is incorrect for " + method);
         }
     }
