@@ -1,57 +1,91 @@
 package io.booter.injector.core.supplier;
 
-import java.lang.reflect.Constructor;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import io.booter.injector.core.SupplierFactory;
 import io.booter.injector.core.beans.*;
 import io.booter.injector.core.exception.InjectorException;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-public class DefaultSupplierFactoryTest {
-    private static final Supplier<?>[] EMPTY = new Supplier[0];
+import static io.booter.injector.core.supplier.SupplierFactory.*;
+import static org.assertj.core.api.Assertions.*;
+
+public class SupplierFactoryTest {
+    private static final List<Supplier<?>> EMPTY = Collections.emptyList();
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfNullPassedAsPatameterToCreate1() throws Exception {
-        new DefaultSupplierFactory().create(null, EMPTY);
+        createInstanceSupplier(null, EMPTY);
     }
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfNullPassedAsPatameterToCreate2() throws Exception {
-        new DefaultSupplierFactory().create(constructor(ClassWithDefaultConstructor.class), (Supplier<?>[]) null);
+        createInstanceSupplier(constructor(ClassWithDefaultConstructor.class), null);
     }
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfNotEnoughParametersArePasseToCreate() throws Exception {
-        new DefaultSupplierFactory().create(constructor(ClassWith1ParameterConstructor.class), EMPTY);
+        createInstanceSupplier(constructor(ClassWith1ParameterConstructor.class), EMPTY);
     }
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfNullPassedAsPatameterToCreateSingleton1() throws Exception {
-        new DefaultSupplierFactory().createSingleton(null, EMPTY, false);
+        createSingletonSupplier(null, EMPTY, false);
     }
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfNullPassedAsPatameterToCreateSingleton2() throws Exception {
-        new DefaultSupplierFactory().createSingleton(constructor(ClassWithDefaultConstructor.class),
-                                                     (Supplier<?>[]) null, false);
+        createSingletonSupplier(constructor(ClassWithDefaultConstructor.class),null, false);
     }
 
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfNotEnoughParametersArePasseToCreateSingleton() throws Exception {
-        new DefaultSupplierFactory().createSingleton(constructor(ClassWith1ParameterConstructor.class), EMPTY, true);
+        createSingletonSupplier(constructor(ClassWith1ParameterConstructor.class), EMPTY, true);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullIsPassedToInstantiator1() throws Exception {
+        createMethodSupplier(null, Collections.emptyList());
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullIsPassedToInstantiator2() throws Exception {
+        Method method = getClass().getDeclaredMethod("method1", int.class);
+        createMethodSupplier(method, null);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNotEnoughParametersPassedToInstantiator() throws Exception {
+        Method method = getClass().getDeclaredMethod("method1", int.class);
+        createMethodSupplier(method, Arrays.asList(() -> this));
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullIsPassedToConstructor1() throws Exception {
+        createConstructorSupplier(null, Collections.emptyList());
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNullIsPassedToConstructor2() throws Exception {
+        Constructor<ClassWithDefaultConstructor> constructor = ClassWithDefaultConstructor.class.getDeclaredConstructor();
+        createConstructorSupplier(constructor, null);
+    }
+
+    @Test(expected = InjectorException.class)
+    public void shouldThrowExceptionIfNotEnoughParametersPassedToConstructor() throws Exception {
+        Constructor<ClassWith1ParameterConstructor> constructor = ClassWith1ParameterConstructor.class.getDeclaredConstructor(Long.class);
+        createConstructorSupplier(constructor, Collections.emptyList());
     }
 
     @Test
     public void shouldCreateFactorySupplier() throws Exception {
-        SupplierFactory factory = new DefaultSupplierFactory();
-
-        Supplier<ClassWithDefaultConstructor> supplier = factory.create(constructor(ClassWithDefaultConstructor.class), EMPTY);
+        Supplier<ClassWithDefaultConstructor> supplier = createInstanceSupplier(constructor(ClassWithDefaultConstructor.class), EMPTY);
         assertThat(supplier).isNotNull();
 
         ClassWithDefaultConstructor instance1 = supplier.get();
@@ -64,12 +98,10 @@ public class DefaultSupplierFactoryTest {
 
     @Test
     public void shouldCreateLazySingletonSupplierFromClassMarkedAsSingleton() throws Exception {
-        SupplierFactory factory = new DefaultSupplierFactory();
         AtomicInteger counter = new AtomicInteger();
         Consumer<LazySingletonClassWithNotifyingConstructor> consumer = (instance) -> counter.incrementAndGet();
-        Supplier<?>[] parameters = new Supplier[] { () -> consumer};
-
-        Supplier<LazySingletonClassWithNotifyingConstructor> supplier = factory.create(constructor(LazySingletonClassWithNotifyingConstructor.class), parameters);
+        Supplier<LazySingletonClassWithNotifyingConstructor> supplier = createInstanceSupplier(constructor(LazySingletonClassWithNotifyingConstructor.class),
+                                                                               Arrays.asList(() -> consumer));
         assertThat(supplier).isNotNull();
 
         LazySingletonClassWithNotifyingConstructor instance1 = supplier.get();
@@ -82,14 +114,12 @@ public class DefaultSupplierFactoryTest {
 
     @Test
     public void shouldCreateEagerSingletonSupplierFromClassMarkedAsSingleton() throws Exception {
-        SupplierFactory factory = new DefaultSupplierFactory();
         AtomicInteger counter = new AtomicInteger();
         Consumer<EagerSingletonClassWithNotifyingConstructor> consumer = (instance) -> counter.incrementAndGet();
-        Supplier<?>[] parameters = new Supplier[] { () -> consumer};
-
 
         assertThat(counter.get()).isEqualTo(0);
-        Supplier<EagerSingletonClassWithNotifyingConstructor> supplier = factory.create(constructor(EagerSingletonClassWithNotifyingConstructor.class), parameters);
+        Supplier<EagerSingletonClassWithNotifyingConstructor> supplier = createInstanceSupplier(constructor(EagerSingletonClassWithNotifyingConstructor.class),
+                Arrays.asList(() -> consumer));
         assertThat(supplier).isNotNull();
         assertThat(counter.get()).isEqualTo(1);
 
@@ -105,12 +135,11 @@ public class DefaultSupplierFactoryTest {
 
     @Test
     public void shouldCreateLazySingletonSupplierForRegularClass() throws Exception {
-        SupplierFactory factory = new DefaultSupplierFactory();
         AtomicInteger counter = new AtomicInteger();
         Consumer<ClassWithNotifyingConstructor> consumer = (instance) -> counter.incrementAndGet();
-        Supplier<?>[] parameters = new Supplier[] { () -> consumer};
 
-        Supplier<ClassWithNotifyingConstructor> supplier = factory.createSingleton(constructor(ClassWithNotifyingConstructor.class), parameters, false);
+        Supplier<ClassWithNotifyingConstructor> supplier = createSingletonSupplier(constructor(ClassWithNotifyingConstructor.class),
+                Arrays.asList(() -> consumer), false);
 
         assertThat(supplier).isNotNull();
         assertThat(counter.get()).isEqualTo(0);
@@ -127,12 +156,11 @@ public class DefaultSupplierFactoryTest {
 
     @Test
     public void shouldCreateEagerSingletonSupplierForRegularClass() throws Exception {
-        SupplierFactory factory = new DefaultSupplierFactory();
         AtomicInteger counter = new AtomicInteger();
         Consumer<ClassWithNotifyingConstructor> consumer = (instance) -> counter.incrementAndGet();
-        Supplier<?>[] parameters = new Supplier[] { () -> consumer};
 
-        Supplier<ClassWithNotifyingConstructor> supplier = factory.createSingleton(constructor(ClassWithNotifyingConstructor.class), parameters, true);
+        Supplier<ClassWithNotifyingConstructor> supplier = createSingletonSupplier(constructor(ClassWithNotifyingConstructor.class),
+                Arrays.asList(() -> consumer), true);
 
         assertThat(supplier).isNotNull();
         assertThat(counter.get()).isEqualTo(1);
@@ -149,7 +177,6 @@ public class DefaultSupplierFactoryTest {
 
     @Test
     public void shouldCreateSupplierForClassWithPostConstructAndCallPostConstruct() throws Exception {
-        SupplierFactory factory = new DefaultSupplierFactory();
         AtomicInteger counter1 = new AtomicInteger();
         AtomicInteger counter2 = new AtomicInteger();
         Consumer<Integer> consumer = (val) -> {
@@ -159,9 +186,8 @@ public class DefaultSupplierFactoryTest {
                 counter2.incrementAndGet();
             }
         };
-        Supplier<?>[] parameters = new Supplier[] { () -> consumer};
 
-        Supplier<ClassWithPostConstruct> supplier = factory.create(constructor(ClassWithPostConstruct.class), parameters);
+        Supplier<ClassWithPostConstruct> supplier = createInstanceSupplier(constructor(ClassWithPostConstruct.class), Arrays.asList(() -> consumer));
 
         assertThat(supplier).isNotNull();
         assertThat(counter1.get()).isEqualTo(0);
@@ -181,7 +207,6 @@ public class DefaultSupplierFactoryTest {
 
     @Test
     public void shouldCreateLazySingletonSupplierForClassWithPostConstructAndCallPostConstruct() throws Exception {
-        SupplierFactory factory = new DefaultSupplierFactory();
         AtomicInteger counter1 = new AtomicInteger();
         AtomicInteger counter2 = new AtomicInteger();
         Consumer<Integer> consumer = (val) -> {
@@ -191,9 +216,8 @@ public class DefaultSupplierFactoryTest {
                 counter2.incrementAndGet();
             }
         };
-        Supplier<?>[] parameters = new Supplier[] { () -> consumer};
 
-        Supplier<ClassWithPostConstruct> supplier = factory.createSingleton(constructor(ClassWithPostConstruct.class), parameters, false);
+        Supplier<ClassWithPostConstruct> supplier = createSingletonSupplier(constructor(ClassWithPostConstruct.class), Arrays.asList(() -> consumer), false);
 
         assertThat(supplier).isNotNull();
         assertThat(counter1.get()).isEqualTo(0);
@@ -213,7 +237,6 @@ public class DefaultSupplierFactoryTest {
 
     @Test
     public void shouldCreateEagerSingletonSupplierForClassWithPostConstructAndCallPostConstruct() throws Exception {
-        SupplierFactory factory = new DefaultSupplierFactory();
         AtomicInteger counter1 = new AtomicInteger();
         AtomicInteger counter2 = new AtomicInteger();
         Consumer<Integer> consumer = (val) -> {
@@ -223,10 +246,9 @@ public class DefaultSupplierFactoryTest {
                 counter2.incrementAndGet();
             }
         };
-        Supplier<?>[] parameters = new Supplier[] { () -> consumer};
 
-        Supplier<ClassWithPostConstruct> supplier = factory.createSingleton(constructor(ClassWithPostConstruct.class),
-                                                                            parameters, true);
+        Supplier<ClassWithPostConstruct> supplier = createSingletonSupplier(constructor(ClassWithPostConstruct.class),
+                Arrays.asList(() -> consumer), true);
 
         assertThat(supplier).isNotNull();
         assertThat(counter1.get()).isEqualTo(1);
@@ -246,7 +268,6 @@ public class DefaultSupplierFactoryTest {
 
     @Test(expected = InjectorException.class)
     public void shouldReportExceptionsThrownByPostConstruct() throws Exception {
-        SupplierFactory factory = new DefaultSupplierFactory();
         AtomicInteger counter1 = new AtomicInteger();
         AtomicInteger counter2 = new AtomicInteger();
         Consumer<Integer> consumer = (val) -> {
@@ -256,9 +277,9 @@ public class DefaultSupplierFactoryTest {
                 counter2.incrementAndGet();
             }
         };
-        Supplier<?>[] parameters = new Supplier[] { () -> consumer};
 
-        Supplier<ClassWithThrowingPostConstruct> supplier = factory.createSingleton(constructor(ClassWithThrowingPostConstruct.class), parameters, false);
+        Supplier<ClassWithThrowingPostConstruct> supplier = createSingletonSupplier(constructor(ClassWithThrowingPostConstruct.class),
+                Arrays.asList(() -> consumer), false);
 
         assertThat(supplier).isNotNull();
         assertThat(counter1.get()).isEqualTo(0);
@@ -266,6 +287,53 @@ public class DefaultSupplierFactoryTest {
 
         supplier.get();
         fail("No exception is thrown, although expected");
+    }
+
+    @Test
+    public void shouldCreateSupplierFromMethod() throws Exception {
+        Method method = getClass().getDeclaredMethod("method1", int.class);
+        AtomicInteger counter = new AtomicInteger();
+
+        Supplier<String> supplier = createMethodSupplier(method, Arrays.asList(() -> this, () -> counter.incrementAndGet()));
+
+        assertThat(supplier.get()).isEqualTo("1");
+        assertThat(supplier.get()).isEqualTo("2");
+    }
+
+    @Test
+    public void shouldCreateFastMethodConstructor() throws Exception {
+        Method method = getClass().getDeclaredMethod("method1", int.class);
+        AtomicInteger counter = new AtomicInteger();
+
+        Supplier<String> supplier = fastMethodConstructor(method, Arrays.asList(() -> this, () -> counter.incrementAndGet()));
+
+        assertThat(supplier.get()).isEqualTo("1");
+        assertThat(supplier.get()).isEqualTo("2");
+    }
+
+    @Test
+    public void shouldCreateFastConstructor() throws Exception {
+        Constructor<ClassWithDefaultConstructor> constructor = ClassWithDefaultConstructor.class.getDeclaredConstructor();
+
+        Supplier<ClassWithDefaultConstructor> supplier = fastConstructor(constructor, Collections.emptyList());
+
+        assertThat(supplier).isNotNull();
+        assertThat(supplier.get()).isInstanceOf(ClassWithDefaultConstructor.class);
+    }
+
+    @Test
+    public void shouldCreateConstructor() throws Exception {
+        Constructor<ClassWith2ParametersConstructor> constructor = (Constructor<ClassWith2ParametersConstructor>) ClassWith2ParametersConstructor.class.getDeclaredConstructors()[0];
+
+        Supplier<ClassWith2ParametersConstructor> supplier = createConstructorSupplier(constructor,
+                Arrays.asList(() -> Long.valueOf(592L), () -> "aBc"));
+
+        assertThat(supplier).isNotNull();
+        assertThat(supplier.get()).isInstanceOf(ClassWith2ParametersConstructor.class);
+    }
+
+    public String method1(int val) {
+        return Integer.toString(val);
     }
 
     @SuppressWarnings("unchecked")

@@ -17,22 +17,17 @@ import io.booter.injector.annotations.ImplementedBy;
 import io.booter.injector.annotations.Inject;
 import io.booter.injector.annotations.Supplies;
 import io.booter.injector.core.exception.InjectorException;
-import io.booter.injector.core.supplier.DefaultSupplierFactory;
+import io.booter.injector.core.supplier.SupplierFactory;
 
+import static io.booter.injector.core.supplier.SupplierFactory.*;
 import static io.booter.injector.core.supplier.Suppliers.*;
 
 public class FastInjector implements Injector {
     public static final int INITIAL_CAPACITY = 10;
     private final ConcurrentMap<Key, Supplier<?>> bindings = new ConcurrentHashMap<>();
     private final ConcurrentMap<Class<?>, Class<?>> modules = new ConcurrentHashMap<>();
-    private final SupplierFactory factory;
 
     public FastInjector() {
-        this(new DefaultSupplierFactory());
-    }
-
-    public FastInjector(SupplierFactory factory) {
-        this.factory = factory;
         bindings.put(Key.of(Injector.class), () -> this);
     }
 
@@ -78,7 +73,7 @@ public class FastInjector implements Injector {
 
         Constructor<T> constructor = (Constructor<T>) locateConstructorAndConfigureInjector(implKey);
 
-        Supplier<T> supplier = factory.createSingleton(constructor,
+        Supplier<T> supplier = SupplierFactory.createSingletonSupplier(constructor,
                                                        buildConstructorCallParameters(constructor, dependencies),
                                                        eager);
 
@@ -110,7 +105,7 @@ public class FastInjector implements Injector {
     <T> Supplier<T> collectBindings(Key key, ConcurrentMap<Key, Key> dependencies) {
         Constructor<?> constructor = locateConstructorAndConfigureInjector(key);
 
-        return (Supplier<T>) factory.create(constructor,
+        return (Supplier<T>) SupplierFactory.createInstanceSupplier(constructor,
                                             buildConstructorCallParameters(constructor, new ConcurrentHashMap<>(dependencies)));
     }
 
@@ -169,7 +164,7 @@ public class FastInjector implements Injector {
 
         List<Supplier<?>> parameters = buildMethodCallParameters(method, instanceSupplier, dependencies);
 
-        bindings.computeIfAbsent(key, (k) -> enhancing(methodSupplier(method, parameters),
+        bindings.computeIfAbsent(key, (k) -> enhancing(createMethodSupplier(method, parameters),
                                                        () -> fastMethodConstructor(method, parameters)));
     }
 
@@ -243,7 +238,7 @@ public class FastInjector implements Injector {
             if (instanceConstructor != null) {
                 throw new InjectorException("Class "
                      + clazz.getCanonicalName()
-                     + " has more than one constructorSupplier annotated with @Inject");
+                     + " has more than one createConstructorSupplier annotated with @Inject");
             }
 
             instanceConstructor = constructor;
@@ -254,7 +249,7 @@ public class FastInjector implements Injector {
                                                                  : instanceConstructor;
 
         if (constructor == null) {
-            throw new InjectorException("Unable to locate suitable constructorSupplier for " + key);
+            throw new InjectorException("Unable to locate suitable createConstructorSupplier for " + key);
         }
 
         return constructor;

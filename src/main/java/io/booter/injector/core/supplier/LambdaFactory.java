@@ -14,13 +14,15 @@ import static io.booter.injector.core.supplier.Utils.safeCall;
 import static io.booter.injector.core.supplier.Utils.validateParameters;
 
 /**
- * This class is a convenient run-time generator of lambdas which can be used to create instances of objects or call
+ * This class is a convenient run-time generator of lambdas which can be used to createInstanceSupplier instances of objects or call
  * methods of classes. By convention all parameters required to call methods and constructors are passed as instances
- * of {@link Supplier} class. For constructors array of input suppliers corresponds to constructorSupplier parameters.
+ * of {@link Supplier} class. For constructors array of input suppliers corresponds to createConstructorSupplier parameters.
  * For methods array of suppliers consists of provider of instance for which method should be invoked and remaining
  * suppliers provide rest of method parameters.
  */
-public class LambdaFactory {
+public final class LambdaFactory {
+    private LambdaFactory() {}
+
     private static final Class<?> INTERFACES[] = {
             Invocable0.class, Invocable1.class, Invocable2.class, Invocable3.class, Invocable4.class,
             Invocable5.class, Invocable6.class, Invocable7.class, Invocable8.class, Invocable9.class,
@@ -40,7 +42,7 @@ public class LambdaFactory {
 
             LOOKUP = constructor.newInstance(LambdaFactory.class, MethodHandles.Lookup.PRIVATE);
         } catch (Exception e) {
-            throw new InjectorException("Unable to create new MethodHandles.Lookup instance", e);
+            throw new InjectorException("Unable to createInstanceSupplier new MethodHandles.Lookup instance", e);
         }
     }
 
@@ -56,7 +58,7 @@ public class LambdaFactory {
     public static MethodHandle locateAnnotated(Class<?> declaringClass, Class<? extends Annotation> annotation) {
         for (Method method: declaringClass.getDeclaredMethods()) {
             if (method.isAnnotationPresent(annotation)) {
-                return LambdaFactory.create(method);
+                return LambdaFactory.createHandle(method);
             }
         }
         return null;
@@ -69,12 +71,12 @@ public class LambdaFactory {
      *          Method to convert into handle.
      * @return  Method handle
      */
-    public static MethodHandle create(Method method) {
+    public static MethodHandle createHandle(Method method) {
         try {
             method.setAccessible(true);
             return LOOKUP.unreflect(method);
         } catch (Exception e) {
-            throw new InjectorException("Unable to create method handle for " + method, e);
+            throw new InjectorException("Unable to createInstanceSupplier method handle for " + method, e);
         }
     }
 
@@ -96,12 +98,12 @@ public class LambdaFactory {
     }
 
     /**
-     * Create lambda for the provided constructorSupplier.
+     * Create lambda for the provided createConstructorSupplier.
      *
      * @param constructor
      *          Constructor to convert to lambda
      * @param suppliers
-     *          Array of suppliers of constructorSupplier parameters.
+     *          Array of suppliers of createConstructorSupplier parameters.
      *
      * @return  Created supplier.
      */
