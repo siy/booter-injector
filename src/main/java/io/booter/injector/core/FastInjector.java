@@ -120,9 +120,7 @@ public class FastInjector implements Injector {
             dependencies.put(key, key);
         }
 
-        final Map<Key, Key> local = new HashMap<>(dependencies);
-
-        return (Supplier<T>) bindings.computeIfAbsent(key, (k) -> factoryLazy(() -> collectBindings(key, local)));
+        return (Supplier<T>) bindings.computeIfAbsent(key, (k) -> factoryLazy(() -> collectBindings(key, dependencies)));
     }
 
     private Constructor<?> locateConstructorAndConfigureInjector(Key key) {
