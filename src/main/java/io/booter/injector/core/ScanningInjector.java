@@ -12,13 +12,12 @@ import io.booter.injector.core.supplier.Utils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static io.booter.injector.core.supplier.SupplierFactory.*;
 import static io.booter.injector.core.supplier.Suppliers.factoryLazy;
@@ -111,9 +110,11 @@ public class ScanningInjector implements Injector {
     }
 
     private Supplier<?> buildSupplier(Binding<?> binding, Node node) {
-        List<Supplier<?>> parameters = node.dependencies().stream()
-                .map(this::wrapSupplier)
-                .collect(Collectors.toList());
+        List<Supplier<?>> parameters = new ArrayList<>();
+
+        node.dependencies().forEach(key -> {
+            parameters.add(key.isSupplier() ? () -> bindings.get(key) : bindings.get(key));
+        });
 
         return binding.isSingleton()
                 ? createSingletonSupplier(node.constructor(), parameters, binding.isEager())
@@ -136,6 +137,7 @@ public class ScanningInjector implements Injector {
 
         nodes.put(node.key(), node).dependencies().forEach((k) -> buildTree(k, new ChainedMap<>(nodes)));
         nodes.forEach(this::bindNode);
+
         return node;
     }
 
@@ -144,21 +146,26 @@ public class ScanningInjector implements Injector {
     }
 
     private Supplier<?> buildSupplier(Node node) {
-        List<Supplier<?>> parameters = node.dependencies().stream().map(this::wrapSupplier).collect(Collectors.toList());
+        List<Supplier<?>> parameters = new ArrayList<>();
+
+        node.dependencies().forEach(key -> parameters.add(key.isSupplier() ? () -> bindings.get(key) : bindings.get(key)));
 
         return node.isMethod() ? createMethodSupplier(node.method(), parameters)
                                : createInstanceSupplier(node.constructor(), parameters);
     }
 
-    private List<Key> collectMethodDependencies(Key configKey, Method method) {
-        List<Key> dependencies = new ArrayList<>();
-        dependencies.add(configKey);
-        dependencies.addAll(collectDependencies(method));
-        return dependencies;
-    }
+    private List<Key> collectDependencies(Executable executable, Key lead) {
+        List<Key> result = new ArrayList<>();
 
-    private Supplier<?> wrapSupplier(Key key) {
-        return key.isSupplier() ? () -> bindings.get(key) : bindings.get(key);
+        if (lead != null) {
+            result.add(lead);
+        }
+
+        for(Parameter parameter : executable.getParameters()) {
+            result.add(Key.of(parameter));
+        }
+
+        return result;
     }
 
     private ChainedMap<Key, Node> buildTree(Key key, ChainedMap<Key, Node> nodes) {
@@ -180,28 +187,24 @@ public class ScanningInjector implements Injector {
         return nodes;
     }
 
-    private Node buildNode(Key key) {
-        Constructor<?> constructor = Utils.locateConstructor(key);
-
-        runTimeConfigure(constructor.getDeclaringClass());
-
-        return new Node(key, collectDependencies(constructor), constructor);
-    }
-
-    private Node buildNoConfigNode(Key key, Class<?> clazz) {
-        return new Node(key, collectDependencies(Utils.locateConstructor(clazz)), Utils.locateConstructor(clazz));
-    }
-
-    private List<Key> collectDependencies(Executable executable) {
-        return Arrays.stream(executable.getParameters()).map(Key::of).collect(Collectors.toList());
-    }
-
     private void runTimeConfigure(Class<?> clazz) {
         ConfiguredBy configuredBy = clazz.getAnnotation(ConfiguredBy.class);
 
         if (configuredBy != null) {
             modules.computeIfAbsent(configuredBy.value(), k -> configureSingle(configuredBy.value()));
         }
+    }
+
+    private Node buildNode(Key key) {
+        Constructor<?> constructor = Utils.locateConstructor(key);
+
+        runTimeConfigure(constructor.getDeclaringClass());
+
+        return new Node(key, collectDependencies(constructor, null), constructor);
+    }
+
+    private Node buildNoConfigNode(Key key, Class<?> clazz) {
+        return new Node(key, collectDependencies(Utils.locateConstructor(clazz), null), Utils.locateConstructor(clazz));
     }
 
     private Node buildConfigNode(Class<?> config, ChainedMap<Key, Node> nodes) {
@@ -217,7 +220,7 @@ public class ScanningInjector implements Injector {
             }
 
             Key key = Key.of(method.getGenericReturnType(), method.getDeclaredAnnotations());
-            List<Key> dependencies = collectMethodDependencies(configKey, method);
+            List<Key> dependencies = collectDependencies(method, configKey);
 
             nodes.put(key, new Node(key, dependencies, method)).dependencies().forEach((k) -> buildTree(k, new ChainedMap<>(nodes)));
         }

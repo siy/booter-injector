@@ -1,7 +1,7 @@
 package io.booter.injector;
 
 import io.booter.injector.annotations.Named;
-import io.booter.injector.core.AnnotationFactory;
+import io.booter.injector.core.annotation.AnnotationFactory;
 import io.booter.injector.core.exception.InjectorException;
 
 import java.util.Collections;

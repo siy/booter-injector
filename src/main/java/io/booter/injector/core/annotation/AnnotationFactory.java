@@ -1,4 +1,4 @@
-package io.booter.injector.core;
+package io.booter.injector.core.annotation;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Proxy;

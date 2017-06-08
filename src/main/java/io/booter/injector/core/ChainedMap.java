@@ -42,7 +42,7 @@ public class ChainedMap<K, V> {
     }
 
     public void forEach(BiConsumer<K, V> biConsumer) {
-        values.forEach(biConsumer);
         children.forEach(child -> child.forEach(biConsumer));
+        values.forEach(biConsumer);
     }
 }

@@ -3,6 +3,7 @@ package io.booter.injector.core;
 import io.booter.injector.Key;
 import io.booter.injector.TypeToken;
 import io.booter.injector.annotations.BindingAnnotation;
+import io.booter.injector.core.annotation.AnnotationFactory;
 import io.booter.injector.core.beans.ClassWithDefaultConstructor;
 import io.booter.injector.core.exception.InjectorException;
 import org.junit.Test;

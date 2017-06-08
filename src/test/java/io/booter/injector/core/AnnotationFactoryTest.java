@@ -2,6 +2,7 @@ package io.booter.injector.core;
 
 import io.booter.injector.annotations.ComputationStyle;
 import io.booter.injector.annotations.Singleton;
+import io.booter.injector.core.annotation.AnnotationFactory;
 import io.booter.injector.core.exception.InjectorException;
 import org.junit.Test;
 
