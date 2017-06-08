@@ -7,6 +7,7 @@ import io.booter.injector.Module;
 import io.booter.injector.annotations.ConfiguredBy;
 import io.booter.injector.annotations.Supplies;
 import io.booter.injector.core.exception.InjectorException;
+import io.booter.injector.core.supplier.LambdaFactory;
 import io.booter.injector.core.supplier.Utils;
 
 import java.lang.reflect.Constructor;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static io.booter.injector.core.supplier.SupplierFactory.*;
@@ -25,6 +27,8 @@ import static io.booter.injector.core.supplier.Suppliers.factoryLazy;
 public class ScanningInjector implements Injector {
     private final ConcurrentMap<Key, Supplier<?>> bindings = new ConcurrentHashMap<>();
     private final ConcurrentMap<Class<?>, Class<?>> modules = new ConcurrentHashMap<>();
+
+    private static final Function<Executable, Parameter[]> getParametersFunction = LambdaFactory.createGetParameters();
 
     public ScanningInjector() {
         bindings.put(Key.of(Injector.class), () -> this);
@@ -161,7 +165,7 @@ public class ScanningInjector implements Injector {
             result.add(lead);
         }
 
-        for(Parameter parameter : executable.getParameters()) {
+        for(Parameter parameter : getParametersFunction.apply(executable)) {
             result.add(Key.of(parameter));
         }
 

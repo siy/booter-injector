@@ -8,6 +8,8 @@ import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static io.booter.injector.core.supplier.Utils.safeCall;
@@ -40,7 +42,7 @@ public final class LambdaFactory {
                 constructor.setAccessible(true);
             }
 
-            LOOKUP = constructor.newInstance(LambdaFactory.class, MethodHandles.Lookup.PRIVATE);
+            LOOKUP = constructor.newInstance(LambdaFactory.class, Lookup.PRIVATE);
         } catch (Exception e) {
             throw new InjectorException("Unable to createInstanceSupplier new MethodHandles.Lookup instance", e);
         }
@@ -117,17 +119,51 @@ public final class LambdaFactory {
         return createLambdaSupplier(suppliers, createCallSite(constructor, parameterCount, isMethod), parameterCount);
     }
 
-    private static CallSite createCallSite(Executable constructor, int parameterCount, boolean isMethod)
+    public static Function<Executable, Parameter[]> createGetParameters() {
+        try {
+            Method[] methods = Executable.class.getDeclaredMethods();
+
+            Method method = null;
+
+            for(Method tmp : methods) {
+                if (tmp.getName().equals("privateGetParameters")) {
+                    method = tmp;
+                    break;
+                }
+            }
+
+            if (method == null) {
+                throw new InjectorException("Required method (Executable.privateGetParameters) does not exists");
+            }
+
+            method.setAccessible(true);
+
+            MethodHandle target = LOOKUP.unreflect(method);
+
+            return (e) -> {
+                try {
+                    return (Parameter[]) target.invokeExact(e);
+                } catch (Throwable t) {
+                    return new Parameter[0];
+                }
+            };
+        } catch (Throwable e) {
+            throw new InjectorException("Unable to get access to Executable.privateGetParameters");
+        }
+    }
+
+    private static CallSite createCallSite(Executable executable, int parameterCount, boolean isMethod)
             throws ReflectiveOperationException, LambdaConversionException {
-        constructor.setAccessible(true);
+
+        executable.setAccessible(true);
 
         if (parameterCount > MAX_PARAMETER_COUNT) {
             throw new InjectorException("More than " + (MAX_PARAMETER_COUNT + (isMethod ? 1 : 0))
-                                        + " parameters are not supported in " + constructor);
+                                        + " parameters are not supported in " + executable);
         }
 
-        MethodHandle target = isMethod ? LOOKUP.unreflect((Method) constructor)
-                                       : LOOKUP.unreflectConstructor((Constructor<?>) constructor);
+        MethodHandle target = isMethod ? LOOKUP.unreflect((Method) executable)
+                                       : LOOKUP.unreflectConstructor((Constructor<?>) executable);
 
         return LambdaMetafactory.metafactory(LOOKUP, "invoke",
                                              MethodType.methodType(INTERFACES[parameterCount]),
