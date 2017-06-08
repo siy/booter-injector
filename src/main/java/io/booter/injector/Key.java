@@ -1,4 +1,8 @@
-package io.booter.injector.core;
+package io.booter.injector;
+
+import io.booter.injector.annotations.BindingAnnotation;
+import io.booter.injector.core.AnnotationFactory;
+import io.booter.injector.core.exception.InjectorException;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Parameter;
@@ -6,10 +10,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Objects;
 import java.util.function.Supplier;
-
-import io.booter.injector.TypeToken;
-import io.booter.injector.annotations.BindingAnnotation;
-import io.booter.injector.core.exception.InjectorException;
 
 public class Key {
     private final Annotation annotation;

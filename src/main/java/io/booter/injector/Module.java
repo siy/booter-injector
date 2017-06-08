@@ -1,5 +1,7 @@
 package io.booter.injector;
 
+import java.util.List;
+
 public interface Module {
-    void configure(Injector injector);
+    List<Binding<?>> collectBindings();
 }

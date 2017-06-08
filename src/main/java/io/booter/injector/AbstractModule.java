@@ -1,17 +1,19 @@
 package io.booter.injector;
 
+import io.booter.injector.core.Bindings;
+
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
-import io.booter.injector.core.Key;
-
 public abstract class AbstractModule implements Module {
-    private Injector injector;
+    private List<Binding<?>> bindings = new ArrayList<>();
 
     @Override
-    public void configure(Injector injector) {
-        this.injector = injector;
+    public List<Binding<?>> collectBindings() {
         configure();
+        return bindings;
     }
 
     protected abstract void configure();
@@ -37,15 +39,15 @@ public abstract class AbstractModule implements Module {
         }
 
         public void to(Class<? extends T> implementation) {
-            injector.bind(key, implementation, true);
+            bindings.add(Bindings.of(key, implementation, false, false));
         }
 
         public void toInstance(T instance) {
-            injector.bind(key, instance, true);
+            bindings.add(Bindings.of(key, instance));
         }
 
         public void toSupplier(Supplier<? extends T> supplier) {
-            injector.bind(key, supplier, true);
+            bindings.add(Bindings.of(key, supplier));
         }
 
         public void toSingleton(Class<? extends T> implementation) {
@@ -53,11 +55,11 @@ public abstract class AbstractModule implements Module {
         }
 
         public void toLazySingleton(Class<? extends T> implementation) {
-            injector.bindSingleton(key, implementation, false, true);
+            bindings.add(Bindings.of(key, implementation, true, false));
         }
 
         public void toEagerSingleton(Class<? extends T> implementation) {
-            injector.bindSingleton(key, implementation, true, true);
+            bindings.add(Bindings.of(key, implementation, true, true));
         }
     }
 }

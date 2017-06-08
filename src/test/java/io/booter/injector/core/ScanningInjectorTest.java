@@ -1,17 +1,14 @@
 package io.booter.injector.core;
 
 import io.booter.injector.Injector;
-import io.booter.injector.TypeToken;
 import io.booter.injector.core.beans.*;
 import io.booter.injector.core.beans.tree.Bar;
 import io.booter.injector.core.beans.tree.Ber;
 import io.booter.injector.core.beans.tree.Foe;
 import io.booter.injector.core.beans.tree.Foo;
 import io.booter.injector.core.exception.InjectorException;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -69,28 +66,6 @@ public class ScanningInjectorTest {
     }
 
     @Test
-    public void shouldBindInterfaceToImplementationManually() throws Exception {
-        Injector injector = getInjector();
-        injector.bind(Key.of(new TypeToken<List<String>>() {}), ListOfStringsImpl.class, false);
-
-        List<String> instance = injector.get(Key.of(new TypeToken<List<String>>() {}));
-
-        assertThat(instance).isNotNull();
-        assertThat(instance).isInstanceOf(ListOfStringsImpl.class);
-    }
-
-    @Test
-    public void shouldBindInterfaceToImplementationViaAnnotation() throws Exception {
-        Injector injector = getInjector();
-
-        List<String> instance = injector.get(ListOfStrings.class);
-
-        assertThat(instance).isNotNull();
-        assertThat(instance).isInstanceOf(ListOfStringsImpl.class);
-    }
-
-    @Test
-    @Ignore //TODO: remove it once functionality will be working
     public void shouldConfigureBindingsViaAnnotation() throws Exception {
         Injector injector = getInjector();
         List<Long> instance = injector.get(ListOfLongs.class);
@@ -101,7 +76,6 @@ public class ScanningInjectorTest {
     }
 
     @Test
-    @Ignore //TODO: remove it once functionality will be working
     public void shouldConfigureBindingsFromMethods() throws Exception {
         Injector injector = getInjector();
         List<Integer> instance = injector.get(ListOfIntegers.class);
@@ -112,7 +86,6 @@ public class ScanningInjectorTest {
     }
 
     @Test
-    @Ignore //TODO: remove it once functionality will be working
     public void shouldBindAnnotatedParameter() throws Exception {
         Injector injector = getInjector();
 
@@ -122,7 +95,6 @@ public class ScanningInjectorTest {
     }
 
     @Test
-    @Ignore //TODO: remove it once functionality will be working
     public void shouldAllowManualConfiguration() throws Exception {
         Injector injector = getInjector();
 
@@ -153,53 +125,6 @@ public class ScanningInjectorTest {
     @Test(expected = InjectorException.class)
     public void shouldThrowExceptionIfAttemptingConfigureWithNullClasses() throws Exception {
         getInjector().configure((Class<?>[]) null);
-    }
-
-    @Test(expected = InjectorException.class)
-    public void shouldThrowExceptionForAttemptToAddExistingBidding() throws Exception {
-        Injector injector = getInjector();
-        injector.bind(Key.of(String.class), () -> "-", true);
-
-        assertThat(injector.get(String.class)).isEqualTo("-");
-
-        injector.bind(Key.of(String.class), () -> "-", true);
-    }
-
-    @Test
-    public void shouldNotThrowExceptionForAttemptToAddExistingBiddingIfThrowingIsDisabled() throws Exception {
-        Injector injector = getInjector();
-        injector.bind(Key.of(String.class), () -> "-", true);
-
-        assertThat(injector.get(String.class)).isEqualTo("-");
-
-        injector.bind(Key.of(String.class), () -> "-", false);
-    }
-
-    @Test
-    @Ignore //TODO: remove it once functionality will be working
-    @SuppressWarnings("unchecked")
-    public void shouldAllowDirectManualConfigurationWithSingleton() throws Exception {
-        Injector injector = getInjector();
-        injector.bindSingleton(Key.of(List.class), ListOfIntegersImpl.class, false, false);
-
-        List<Integer> instance = injector.get(List.class);
-
-        assertThat(instance).isNotNull();
-        assertThat(instance).isInstanceOf(ListOfIntegersImpl.class);
-        assertThat(instance).containsExactly(82, 73, 91, 64);
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    @Ignore //TODO: remove it once functionality will be working
-    public void shouldAllowDirectManualConfigurationWithSupplier() throws Exception {
-        Injector injector = getInjector();
-        injector.bind(Key.of(List.class), ArrayList::new, true);
-
-        List<Integer> instance = injector.get(List.class);
-
-        assertThat(instance).isNotNull();
-        assertThat(instance).isInstanceOf(ArrayList.class);
     }
 
     @Test(expected = InjectorException.class)

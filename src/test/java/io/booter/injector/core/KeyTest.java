@@ -1,5 +1,6 @@
 package io.booter.injector.core;
 
+import io.booter.injector.Key;
 import io.booter.injector.TypeToken;
 import io.booter.injector.annotations.BindingAnnotation;
 import io.booter.injector.core.beans.ClassWithDefaultConstructor;
@@ -11,11 +12,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.function.Supplier;
-import java.lang.reflect.*;
 
-import static org.junit.Assert.*;
 import static org.assertj.core.api.Assertions.*;
 
 public class KeyTest {

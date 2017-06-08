@@ -1,27 +1,29 @@
 package io.booter.injector.core.supplier;
 
+import io.booter.injector.Key;
+import io.booter.injector.annotations.ImplementedBy;
+import io.booter.injector.annotations.Inject;
+import io.booter.injector.core.exception.InjectorException;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import io.booter.injector.annotations.ImplementedBy;
-import io.booter.injector.annotations.Inject;
-import io.booter.injector.core.Key;
-import io.booter.injector.core.exception.InjectorException;
-
 public final class Utils {
     private Utils() {}
 
     public static Constructor<?> locateConstructor(Key key) {
-        Class<?> clazz = key.rawClass();
+        return locateConstructor(key.rawClass());
+    }
 
+    public static Constructor<?> locateConstructor(Class<?> clazz) {
         if (clazz.isInterface()) {
             ImplementedBy implementationClass = clazz.getAnnotation(ImplementedBy.class);
 
             if (implementationClass == null || implementationClass.value().isInterface()) {
-                throw new InjectorException("Unable to locate suitable implementation for " + key);
+                throw new InjectorException("Unable to locate suitable implementation for " + clazz);
             }
 
             clazz = implementationClass.value();
@@ -70,7 +72,7 @@ public final class Utils {
                                                                  : instanceConstructor;
 
         if (constructor == null) {
-            throw new InjectorException("Unable to locate suitable createConstructorSupplier for " + key);
+            throw new InjectorException("Unable to locate suitable createConstructorSupplier for " + clazz);
         }
 
         return constructor;

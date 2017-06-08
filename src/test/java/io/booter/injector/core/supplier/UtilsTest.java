@@ -1,7 +1,7 @@
 package io.booter.injector.core.supplier;
 
+import io.booter.injector.Key;
 import io.booter.injector.annotations.Inject;
-import io.booter.injector.core.Key;
 import io.booter.injector.core.beans.AnnotatedConstructorClass;
 import io.booter.injector.core.beans.DefaultConstructorClass;
 import io.booter.injector.core.beans.MultipleConstructorClass;
