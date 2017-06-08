@@ -18,16 +18,9 @@ public final class Utils {
         return locateConstructor(key.rawClass());
     }
 
-    public static Constructor<?> locateConstructor(Class<?> clazz) {
-        if (clazz.isInterface()) {
-            ImplementedBy implementationClass = clazz.getAnnotation(ImplementedBy.class);
-
-            if (implementationClass == null || implementationClass.value().isInterface()) {
-                throw new InjectorException("Unable to locate suitable implementation for " + clazz);
-            }
-
-            clazz = implementationClass.value();
-        }
+    public static Constructor<?> locateConstructor(Class<?> inputClass) {
+        ImplementedBy implementationClass = inputClass.getAnnotation(ImplementedBy.class);
+        Class<?> clazz = implementationClass != null ? implementationClass.value() : inputClass;
 
         Constructor<?> instanceConstructor = null;
         Constructor<?> defaultConstructor = null;
@@ -72,7 +65,7 @@ public final class Utils {
                                                                  : instanceConstructor;
 
         if (constructor == null) {
-            throw new InjectorException("Unable to locate suitable createConstructorSupplier for " + clazz);
+            throw new InjectorException("Unable to locate suitable constructor for " + clazz);
         }
 
         return constructor;
@@ -82,12 +75,16 @@ public final class Utils {
         T get() throws Throwable;
     }
 
-    public static <T> T safeCall(ThrowingSupplier<T> factory, Object method) {
+    public static <T> T safeCall(ThrowingSupplier<T> factory, Supplier<String> messageSupplier) {
         try {
             return factory.get();
         } catch (Throwable  e) {
-            throw new InjectorException("Error while invoking " + Objects.toString(method), e);
+            throw new InjectorException("Error while invoking " + messageSupplier.get(), e);
         }
+    }
+
+    public static <T> T safeCall(ThrowingSupplier<T> factory, Executable executable) {
+        return safeCall(factory, () -> Objects.toString(executable));
     }
 
     public static void validateParameters(Executable method, Supplier<?>[] suppliers, int extraParameters) {

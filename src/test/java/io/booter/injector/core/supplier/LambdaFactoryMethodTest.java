@@ -1,13 +1,13 @@
 package io.booter.injector.core.supplier;
 
+import io.booter.injector.core.exception.InjectorException;
+import org.junit.Test;
+
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
-import io.booter.injector.core.exception.InjectorException;
-import org.junit.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 public class LambdaFactoryMethodTest {
     private final Supplier<?>[] parameters = new Supplier[]{
@@ -23,7 +23,7 @@ public class LambdaFactoryMethodTest {
             () -> "s3",
     };
 
-    private Class<?>[] types = new Class[]{
+    private final Class<?>[] types = new Class[]{
             int.class,
             long.class,
             String.class,

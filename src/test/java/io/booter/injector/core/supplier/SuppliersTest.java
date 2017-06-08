@@ -1,9 +1,8 @@
 package io.booter.injector.core.supplier;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collections;
+import io.booter.injector.core.exception.InjectorException;
+import org.junit.Test;
+
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -11,14 +10,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import io.booter.injector.core.beans.ClassWith1ParameterConstructor;
-import io.booter.injector.core.beans.ClassWith2ParametersConstructor;
-import io.booter.injector.core.beans.ClassWithDefaultConstructor;
-import io.booter.injector.core.exception.InjectorException;
-import org.junit.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.booter.injector.core.supplier.Suppliers.*;
+import static org.assertj.core.api.Assertions.*;
 
 public class SuppliersTest {
     private static final int NUM_THREADS = Runtime.getRuntime().availableProcessors();
@@ -69,7 +62,7 @@ public class SuppliersTest {
     public void shouldCreateLazySingleton() throws Exception {
         AtomicInteger counter = new AtomicInteger();
 
-        Supplier<Integer> supplier = singleton(() -> counter.incrementAndGet(), false);
+        Supplier<Integer> supplier = singleton(counter::incrementAndGet, false);
         assertThat(counter.get()).isEqualTo(0);
 
         Integer value1 = supplier.get();
@@ -93,11 +86,12 @@ public class SuppliersTest {
         assertThat(supplier.get()).isEqualTo(2);
     }
 
+    @SuppressWarnings("SpellCheckingInspection")
     private void measure(Supplier<Integer> supplier, String type) throws InterruptedException, java.util.concurrent.ExecutionException {
         ExecutorService pool = Executors.newFixedThreadPool(NUM_THREADS);
 
         List<Callable<Integer>> callables = IntStream.range(0, NUM_THREADS)
-                                                     .mapToObj(n -> (Callable<Integer>) () -> supplier.get())
+                                                     .mapToObj(n -> (Callable<Integer>) supplier::get)
                                                      .collect(Collectors.toList());
 
         long start = System.nanoTime();
@@ -112,7 +106,7 @@ public class SuppliersTest {
     private void checkInstantiatedOnce(Supplier<Integer> supplier) throws InterruptedException, java.util.concurrent.ExecutionException {
         ExecutorService pool = Executors.newFixedThreadPool(NUM_THREADS);
         CyclicBarrier barrier = new CyclicBarrier(NUM_THREADS);
-        List<Callable<Integer>> callables = IntStream.range(0, NUM_THREADS)
+        @SuppressWarnings("SpellCheckingInspection") List<Callable<Integer>> callables = IntStream.range(0, NUM_THREADS)
                                                      .mapToObj(n -> (Callable<Integer>) () -> {
                                                          barrier.await();
                                                          return supplier.get();

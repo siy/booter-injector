@@ -1,16 +1,16 @@
 package io.booter.injector.core;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Target;
-import java.util.HashMap;
-import java.util.Map;
-
 import io.booter.injector.annotations.ComputationStyle;
 import io.booter.injector.annotations.Singleton;
 import io.booter.injector.core.exception.InjectorException;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.*;
 
 public class AnnotationFactoryTest {
     @Test
@@ -43,9 +43,11 @@ public class AnnotationFactoryTest {
         assertThat(singleton.toString()).isEqualTo("@io.booter.injector.annotations.Singleton(value=EAGER)");
     }
 
+    @SuppressWarnings("SpellCheckingInspection")
     @Test(expected = InjectorException.class)
     public void shouldFailToCreateAnnotationWithIncorrectlyNamedValues() throws Exception {
         Map<String, Object> values = new HashMap<>();
+        //noinspection SpellCheckingInspection
         values.put("valu", ComputationStyle.EAGER);
 
         Singleton singleton = AnnotationFactory.create(Singleton.class, values);

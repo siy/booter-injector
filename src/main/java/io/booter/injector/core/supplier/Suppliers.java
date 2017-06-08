@@ -1,15 +1,10 @@
 package io.booter.injector.core.supplier;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
-import static io.booter.injector.core.supplier.Utils.*;
+import static io.booter.injector.core.supplier.Utils.validateNotNull;
 
-//TODO: refactor suppliers to be algorithm-only. others merge with supplier factory. supplier factory should be static
 public final class Suppliers {
     private Suppliers() {
     }
@@ -18,7 +13,7 @@ public final class Suppliers {
         validateNotNull(factory);
 
         return new Supplier<T>() {
-            private final Supplier<T> defaultDelegate = () -> init();
+            private final Supplier<T> defaultDelegate = this::init;
             private final AtomicBoolean marker = new AtomicBoolean();
             private Supplier<T> delegate = defaultDelegate;
 
@@ -54,7 +49,6 @@ public final class Suppliers {
         return lazy(factory);
     }
 
-    //TODO: createInstanceSupplier generalized implementation?
     public static <T> Supplier<T> enhancing(final Supplier<T> initial, Supplier<Supplier<T>> enhanced) {
         validateNotNull(initial, enhanced);
 

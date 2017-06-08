@@ -2,7 +2,6 @@ package io.booter.injector.core.supplier;
 
 import io.booter.injector.annotations.ComputationStyle;
 import io.booter.injector.annotations.Singleton;
-import io.booter.injector.core.exception.InjectorException;
 
 import javax.annotation.PostConstruct;
 import java.lang.invoke.MethodHandle;
@@ -11,7 +10,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static io.booter.injector.core.supplier.Suppliers.*;
+import static io.booter.injector.core.supplier.Suppliers.enhancing;
+import static io.booter.injector.core.supplier.Suppliers.singleton;
 import static io.booter.injector.core.supplier.Utils.*;
 
 public final class SupplierFactory {
@@ -43,21 +43,11 @@ public final class SupplierFactory {
             return factory;
         }
 
-        return new Supplier<T>() {
-            @Override
-            public T get() {
-                T instance = factory.get();
+        return () -> {
+            T instance = factory.get();
 
-                try {
-                    methodHandle.invoke(instance);
-                } catch (Throwable throwable) {
-                    throw new InjectorException("Error while invoking @PostConstruct method for "
-                                                + constructor.getDeclaringClass(),
-                                                throwable);
-                }
-
-                return instance;
-            }
+            safeCall(() -> methodHandle.invoke(instance), () -> "@PostConstruct method for " + constructor.getDeclaringClass());
+            return instance;
         };
     }
 
@@ -79,6 +69,7 @@ public final class SupplierFactory {
         return () -> safeCall(mapMethodParameters(method, suppliers), method);
     }
 
+    @SuppressWarnings("unchecked")
     private static <T> ThrowingSupplier<T> mapMethodParameters(Method method, Supplier<?>[] suppliers) {
         switch (method.getParameterCount()) {
             case  0: return () -> (T) method.invoke(suppliers[0].get());

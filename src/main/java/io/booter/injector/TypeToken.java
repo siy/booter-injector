@@ -4,8 +4,6 @@ import io.booter.injector.core.exception.InjectorException;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.WildcardType;
-import java.util.Arrays;
 
 public abstract class TypeToken<T> {
     public Type type() {

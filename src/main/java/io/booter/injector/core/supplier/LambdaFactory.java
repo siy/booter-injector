@@ -1,5 +1,7 @@
 package io.booter.injector.core.supplier;
 
+import io.booter.injector.core.exception.InjectorException;
+
 import java.lang.annotation.Annotation;
 import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
@@ -7,8 +9,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
-
-import io.booter.injector.core.exception.InjectorException;
 
 import static io.booter.injector.core.supplier.Utils.safeCall;
 import static io.booter.injector.core.supplier.Utils.validateParameters;
@@ -31,7 +31,7 @@ public final class LambdaFactory {
 
     private static final int MAX_PARAMETER_COUNT = INTERFACES.length - 1;
 
-    private static Lookup LOOKUP;
+    private static final Lookup LOOKUP;
 
     static {
         try {

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 public abstract class AbstractModule implements Module {
-    private List<Binding<?>> bindings = new ArrayList<>();
+    private final List<Binding<?>> bindings = new ArrayList<>();
 
     @Override
     public List<Binding<?>> collectBindings() {

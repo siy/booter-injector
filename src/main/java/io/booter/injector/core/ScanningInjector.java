@@ -85,6 +85,7 @@ public class ScanningInjector implements Injector {
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     private Class<?> configureSingle(Class<?> clazz) {
         Node node = resolveConfig(clazz);
 
@@ -105,11 +106,11 @@ public class ScanningInjector implements Injector {
         if (binding.isResolved()) {
             bindings.putIfAbsent(key, (Supplier<?>) binding.binding());
         } else {
-            bindings.putIfAbsent(key, buildSipplier(binding, bindDependencies(key, (Class<?>) binding.binding())));
+            bindings.putIfAbsent(key, buildSupplier(binding, bindDependencies(key, (Class<?>) binding.binding())));
         }
     }
 
-    private Supplier<?> buildSipplier(Binding<?> binding, Node node) {
+    private Supplier<?> buildSupplier(Binding<?> binding, Node node) {
         List<Supplier<?>> parameters = node.dependencies().stream()
                 .map(this::wrapSupplier)
                 .collect(Collectors.toList());
