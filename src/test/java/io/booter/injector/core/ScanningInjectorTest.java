@@ -208,8 +208,6 @@ public class ScanningInjectorTest {
     }
 
     @Test(expected = InjectorException.class)
-    @Ignore
-
     public void shouldDetectCycles() throws Exception {
         getInjector().get(ClassWithCyclicDependencies.class);
     }
