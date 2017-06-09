@@ -15,27 +15,48 @@ import java.util.function.Supplier;
  *
  *      public void configure() {
  *          bind(new TypeLiteral<List<String>>() {}).annotatedWith(MyAnnotation.class).to(NamesList.class);
- *          
+ *          bind(MyInterface.class).toSingleton(MyImplementation.class);
+ *          bind(MyOtherInterface.class).toEagerSingleton(MyOtherImplementation.class);
  *      }
  *  }
  * }</pre>
  */
-
 public abstract class AbstractModule implements Module {
     private final List<Binding<?>> bindings = new ArrayList<>();
 
+    /**
+     * Method invoked by {@link Injector} in order to collect bindings.
+     * @return
+     */
     @Override
-    public List<Binding<?>> collectBindings() {
+    public final List<Binding<?>> collectBindings() {
         configure();
         return bindings;
     }
 
+    /**
+     * Method which should be overridden by implementations.
+     */
     protected abstract void configure();
 
+    /**
+     * Begin binding creation sequence for provided class.
+     *
+     * @param clazz
+     *          Class to which binding will be performed.
+     * @return {@link Builder} which will finish binding creation.
+     */
     protected <T> Builder<T> bind(Class<T> clazz) {
         return new Builder<>(Key.of(clazz));
     }
 
+    /**
+     * Begin binding creation sequence for provided {@link TypeToken}.
+     *
+     * @param token
+     *          Token which represents a type to which binding will be performed.
+     * @return {@link Builder} which will finish binding creation.
+     */
     protected <T> Builder<T> bind(TypeToken<T> token) {
         return new Builder<>(Key.of(token));
     }
@@ -43,42 +64,121 @@ public abstract class AbstractModule implements Module {
     public class Builder<T> {
         private Key key;
 
-        public Builder(Key key) {
+        private Builder(Key key) {
             this.key = key;
         }
 
+        /**
+         * Terminate binding creation sequence by associating it with specified class.
+         *
+         * @param implementation
+         *          Class to which binding should be created.
+         */
+        public void to(Class<? extends T> implementation) {
+            bindings.add(Bindings.of(key, implementation, false, false));
+        }
+
+        /**
+         * Terminate binding creation sequence by associating it with specified instance.
+         *
+         * @param instance
+         *          Instance to which binding should be created.
+         */
+        public void toInstance(T instance) {
+            bindings.add(Bindings.of(key, instance));
+        }
+
+        /**
+         * Terminate binding creation sequence by associating it with specified {@link Supplier}.
+         *
+         * @param supplier
+         *          Supplier to which binding should be created.
+         */
+        public void toSupplier(Supplier<? extends T> supplier) {
+            bindings.add(Bindings.of(key, supplier));
+        }
+
+        /**
+         * Terminate binding creation sequence by associating it with specified class. The class will be handled as
+         * lazy singleton.
+         *
+         * @param implementation
+         *          Class to which binding should be created.
+         */
+        public void toSingleton(Class<? extends T> implementation) {
+            toLazySingleton(implementation);
+        }
+
+        /**
+         * Terminate binding creation sequence by associating it with specified class. The class will be handled as
+         * lazy singleton.
+         *
+         * @param implementation
+         *          Class to which binding should be created.
+         */
+        public void toLazySingleton(Class<? extends T> implementation) {
+            bindings.add(Bindings.of(key, implementation, true, false));
+        }
+
+        /**
+         * Terminate binding creation sequence by associating it with specified class. The class will be handled as
+         * eager singleton.
+         *
+         * @param implementation
+         *          Class to which binding should be created.
+         */
+        public void toEagerSingleton(Class<? extends T> implementation) {
+            bindings.add(Bindings.of(key, implementation, true, true));
+        }
+
+        /**
+         * Add requirement for specified annotation for binding. Example:
+         * <pre>{@code
+         *  bind(MyInterface.class).annotatedWith(SomeAnnotation.class).to(SpecificImplementation.class);
+         * }</pre>
+         *
+         * For the example above created binding will match parameters which request <code>MyInterface</code> annotated
+         * with <code>SomeAnnotation</code> like this:
+         *
+         * <pre>{@code
+         * public class MyOtherClass {
+         *     ...
+         *     public MyOtherClass(@SomeAnnotation MyInterface parameter) {
+         *         ...
+         *     }
+         *     ...
+         * }
+         * }</pre>
+         *
+         * Note that this method is an intermediate step in binding creation sequence. In order to complete binding
+         * one of terminating methods should be invoked.
+         * <br />
+         * Note that provided annotation class should be annotated with
+         * {@link io.booter.injector.annotations.BindingAnnotation} in order to make this work.
+         *
+         * @param annotation
+         *          Annotation class which should be present in order to match binding.
+         * @return <code>this</code> for call chaining (fluent syntax).
+         */
         public Builder<T> annotatedWith(Class<? extends Annotation> annotation) {
             key = key.with(annotation);
             return this;
         }
 
+        /**
+         * Specialised version of the {@link #annotatedWith(Class)} method which adds
+         * {@link io.booter.injector.annotations.Named} annotation with specified value to built binding.
+         * <br />
+         * Note that this method is an intermediate step in binding creation sequence. In order to complete binding
+         * one of terminating methods should be invoked.
+         *
+         * @param name
+         *          Value for the {@link io.booter.injector.annotations.Named} annotation.
+         * @return <code>this</code> for call chaining (fluent syntax).
+         */
         public Builder<T> named(String name) {
             key = key.with(Naming.with(name));
             return this;
-        }
-
-        public void to(Class<? extends T> implementation) {
-            bindings.add(Bindings.of(key, implementation, false, false));
-        }
-
-        public void toInstance(T instance) {
-            bindings.add(Bindings.of(key, instance));
-        }
-
-        public void toSupplier(Supplier<? extends T> supplier) {
-            bindings.add(Bindings.of(key, supplier));
-        }
-
-        public void toSingleton(Class<? extends T> implementation) {
-            toLazySingleton(implementation);
-        }
-
-        public void toLazySingleton(Class<? extends T> implementation) {
-            bindings.add(Bindings.of(key, implementation, true, false));
-        }
-
-        public void toEagerSingleton(Class<? extends T> implementation) {
-            bindings.add(Bindings.of(key, implementation, true, true));
         }
     }
 }

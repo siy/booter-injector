@@ -39,26 +39,48 @@ public class ChainedMap<K, V> {
         }
     }
 
-    private void addChild(ChainedMap<K, V> child) {
-        children.add(child);
-    }
-
+    /**
+     * Retrieve value from this map instance or from parent, if this map does not contain requested key.
+     *
+     * @param key
+     *          Key to retrieve value for.
+     * @return Value associated with key or <code>null</code> if no such key present in the map.
+     */
     public V get(K key) {
         V value = values.get(key);
         return value == null ? getFromParent(key) : value;
     }
 
-    private V getFromParent(K key) {
-        return parent == null ? null : parent.get(key);
-    }
-
+    /**
+     * Put value into map.
+     *
+     * @param key
+     *          Key to associate value with.
+     * @param value
+     *          Value to associate with key
+     * @return Source value for convenient call chaining (fluent syntax)
+     */
     public V put(K key, V value) {
         values.put(key, value);
         return value;
     }
 
+    /**
+     * Invoke specified {@link BiConsumer} for all map entries and then invoke it for all child maps.
+     *
+     * @param biConsumer
+     *          {@link BiConsumer} instance to invoke.
+     */
     public void forEach(BiConsumer<K, V> biConsumer) {
         children.forEach(child -> child.forEach(biConsumer));
         values.forEach(biConsumer);
+    }
+
+    private void addChild(ChainedMap<K, V> child) {
+        children.add(child);
+    }
+
+    private V getFromParent(K key) {
+        return parent == null ? null : parent.get(key);
     }
 }
