@@ -11,6 +11,7 @@ import static java.lang.annotation.ElementType.PARAMETER;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({PARAMETER, FIELD})
 @Documented
+@BindingAnnotation
 public @interface Named {
     String value();
 }

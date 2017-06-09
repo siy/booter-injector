@@ -1,15 +1,15 @@
 package io.booter.injector;
 
-import io.booter.injector.annotations.BindingAnnotation;
-import io.booter.injector.core.annotation.AnnotationFactory;
-import io.booter.injector.core.exception.InjectorException;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Objects;
 import java.util.function.Supplier;
+
+import io.booter.injector.annotations.BindingAnnotation;
+import io.booter.injector.core.annotation.AnnotationFactory;
+import io.booter.injector.core.exception.InjectorException;
 
 public class Key {
     private final Annotation annotation;
@@ -117,6 +117,17 @@ public class Key {
         }
 
         return new Key(type, supplier, clazz, AnnotationFactory.create(annotation));
+    }
+
+    public Key with(Annotation annotation) {
+        if (!annotation.annotationType().isAnnotationPresent(BindingAnnotation.class)) {
+            throw new InjectorException("Annotation "
+                                        + annotation.annotationType().getSimpleName()
+                                        + " must be annotated with @"
+                                        + BindingAnnotation.class.getSimpleName());
+        }
+
+        return new Key(type, supplier, clazz, annotation);
     }
 
     @Override

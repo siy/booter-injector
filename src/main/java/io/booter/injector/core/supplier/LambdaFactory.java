@@ -1,7 +1,5 @@
 package io.booter.injector.core.supplier;
 
-import io.booter.injector.core.exception.InjectorException;
-
 import java.lang.annotation.Annotation;
 import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
@@ -11,6 +9,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import io.booter.injector.core.exception.InjectorException;
 
 import static io.booter.injector.core.supplier.Utils.safeCall;
 import static io.booter.injector.core.supplier.Utils.validateParameters;
@@ -25,6 +25,8 @@ import static io.booter.injector.core.supplier.Utils.validateParameters;
 public final class LambdaFactory {
     private LambdaFactory() {}
 
+    public static final Function<Executable, Parameter[]> getParametersFunction;
+
     private static final Class<?> INTERFACES[] = {
             Invocable0.class, Invocable1.class, Invocable2.class, Invocable3.class, Invocable4.class,
             Invocable5.class, Invocable6.class, Invocable7.class, Invocable8.class, Invocable9.class,
@@ -32,7 +34,6 @@ public final class LambdaFactory {
     };
 
     private static final int MAX_PARAMETER_COUNT = INTERFACES.length - 1;
-
     private static final Lookup LOOKUP;
 
     static {
@@ -43,6 +44,7 @@ public final class LambdaFactory {
             }
 
             LOOKUP = constructor.newInstance(LambdaFactory.class, Lookup.PRIVATE);
+            getParametersFunction = createParametersFunction();
         } catch (Exception e) {
             throw new InjectorException("Unable to createInstanceSupplier new MethodHandles.Lookup instance", e);
         }
@@ -119,37 +121,42 @@ public final class LambdaFactory {
         return createLambdaSupplier(suppliers, createCallSite(constructor, parameterCount, isMethod), parameterCount);
     }
 
-    public static Function<Executable, Parameter[]> createGetParameters() {
+    private static Function<Executable,Parameter[]> createParametersFunction() {
+        Method method = lookupMethod("privateGetParameters");
+
         try {
-            Method[] methods = Executable.class.getDeclaredMethods();
-
-            Method method = null;
-
-            for(Method tmp : methods) {
-                if (tmp.getName().equals("privateGetParameters")) {
-                    method = tmp;
-                    break;
-                }
-            }
-
-            if (method == null) {
-                throw new InjectorException("Required method (Executable.privateGetParameters) does not exists");
-            }
-
-            method.setAccessible(true);
-
             MethodHandle target = LOOKUP.unreflect(method);
 
-            return (e) -> {
+            return (executable) -> {
                 try {
-                    return (Parameter[]) target.invokeExact(e);
+                    return (Parameter[]) target.invokeExact(executable);
                 } catch (Throwable t) {
-                    return new Parameter[0];
+                    throw new InjectorException("Unable to invoke Executable.privateGetParameters", t);
                 }
             };
         } catch (Throwable e) {
             throw new InjectorException("Unable to get access to Executable.privateGetParameters");
         }
+    }
+
+    private static Method lookupMethod(String name) {
+        Method method = null;
+
+        Method[] methods = Executable.class.getDeclaredMethods();
+        for(Method tmp : methods) {
+            if (tmp.getName().equals(name)) {
+                method = tmp;
+                break;
+            }
+        }
+
+        if (method == null) {
+            throw new InjectorException("Required method (Executable." + name + ") does not exists");
+        }
+
+        method.setAccessible(true);
+
+        return method;
     }
 
     private static CallSite createCallSite(Executable executable, int parameterCount, boolean isMethod)

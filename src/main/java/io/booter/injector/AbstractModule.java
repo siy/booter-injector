@@ -1,11 +1,11 @@
 package io.booter.injector;
 
-import io.booter.injector.core.Bindings;
-
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+
+import io.booter.injector.core.Bindings;
 
 public abstract class AbstractModule implements Module {
     private final List<Binding<?>> bindings = new ArrayList<>();
@@ -35,6 +35,11 @@ public abstract class AbstractModule implements Module {
 
         public Builder<T> annotatedWith(Class<? extends Annotation> annotation) {
             key = key.with(annotation);
+            return this;
+        }
+
+        public Builder<T> named(String name) {
+            key = key.with(Naming.with(name));
             return this;
         }
 
