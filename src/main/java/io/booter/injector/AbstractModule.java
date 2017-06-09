@@ -1,11 +1,25 @@
 package io.booter.injector;
 
+import io.booter.injector.core.Bindings;
+
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-import io.booter.injector.core.Bindings;
+/**
+ * Convenient boilerplate for application modules. Using this class as a base class for module implementation
+ * enables convenient injector configuration using fluent syntax. For example:
+ * <pre>{@code
+ *  public class MyModule extends AbstractModule {
+ *
+ *      public void configure() {
+ *          bind(new TypeLiteral<List<String>>() {}).annotatedWith(MyAnnotation.class).to(NamesList.class);
+ *          
+ *      }
+ *  }
+ * }</pre>
+ */
 
 public abstract class AbstractModule implements Module {
     private final List<Binding<?>> bindings = new ArrayList<>();

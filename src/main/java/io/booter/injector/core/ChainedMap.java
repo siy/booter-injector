@@ -6,15 +6,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
+/**
+ * Specialized map convenient for tree traversal. It enables convenient lookup for keys through subtree (from current
+ * location up to root) while preventing searches between sibling subtrees.
+ *
+ * @param <K> key type
+ * @param <V> value type
+ */
 public class ChainedMap<K, V> {
     private final Map<K, V> values = new HashMap<>();
     private final ChainedMap<K, V> parent;
     private final List<ChainedMap<K, V>> children = new ArrayList<>();
 
+    /**
+     * Create an empty map
+     */
     public ChainedMap() {
         this(null);
     }
 
+    /**
+     * Create empty map with provided parent map.
+     *
+     * @param parent
+     *          Parent map.
+     */
     public ChainedMap(ChainedMap<K, V> parent) {
         this.parent = parent;
 

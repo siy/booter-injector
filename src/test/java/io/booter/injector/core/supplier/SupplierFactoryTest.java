@@ -66,23 +66,6 @@ public class SupplierFactoryTest {
         createMethodSupplier(method, Collections.singletonList(() -> this));
     }
 
-    @Test(expected = InjectorException.class)
-    public void shouldThrowExceptionIfNullIsPassedToConstructor1() throws Exception {
-        createConstructorSupplier(null, Collections.emptyList());
-    }
-
-    @Test(expected = InjectorException.class)
-    public void shouldThrowExceptionIfNullIsPassedToConstructor2() throws Exception {
-        Constructor<ClassWithDefaultConstructor> constructor = ClassWithDefaultConstructor.class.getDeclaredConstructor();
-        createConstructorSupplier(constructor, null);
-    }
-
-    @Test(expected = InjectorException.class)
-    public void shouldThrowExceptionIfNotEnoughParametersPassedToConstructor() throws Exception {
-        Constructor<ClassWith1ParameterConstructor> constructor = ClassWith1ParameterConstructor.class.getDeclaredConstructor(Long.class);
-        createConstructorSupplier(constructor, Collections.emptyList());
-    }
-
     @Test
     public void shouldCreateFactorySupplier() throws Exception {
         Supplier<ClassWithDefaultConstructor> supplier = createInstanceSupplier(constructor(ClassWithDefaultConstructor.class), EMPTY);
@@ -286,39 +269,6 @@ public class SupplierFactoryTest {
 
         assertThat(supplier.get()).isEqualTo("1");
         assertThat(supplier.get()).isEqualTo("2");
-    }
-
-    @Test
-    public void shouldCreateFastMethodConstructor() throws Exception {
-        Method method = getClass().getDeclaredMethod("method1", int.class);
-        AtomicInteger counter = new AtomicInteger();
-
-        Supplier<String> supplier = fastMethodConstructor(method, Arrays.asList(() -> this, counter::incrementAndGet));
-
-        assertThat(supplier.get()).isEqualTo("1");
-        assertThat(supplier.get()).isEqualTo("2");
-    }
-
-    @Test
-    public void shouldCreateFastConstructor() throws Exception {
-        Constructor<ClassWithDefaultConstructor> constructor = ClassWithDefaultConstructor.class.getDeclaredConstructor();
-
-        Supplier<ClassWithDefaultConstructor> supplier = fastConstructor(constructor, Collections.emptyList());
-
-        assertThat(supplier).isNotNull();
-        assertThat(supplier.get()).isInstanceOf(ClassWithDefaultConstructor.class);
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    public void shouldCreateConstructor() throws Exception {
-        Constructor<ClassWith2ParametersConstructor> constructor = (Constructor<ClassWith2ParametersConstructor>) ClassWith2ParametersConstructor.class.getDeclaredConstructors()[0];
-
-        Supplier<ClassWith2ParametersConstructor> supplier = createConstructorSupplier(constructor,
-                Arrays.asList(() -> 592L, () -> "aBc"));
-
-        assertThat(supplier).isNotNull();
-        assertThat(supplier.get()).isInstanceOf(ClassWith2ParametersConstructor.class);
     }
 
     public String method1(int val) {

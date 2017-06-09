@@ -1,5 +1,7 @@
 package io.booter.injector.core.supplier;
 
+import io.booter.injector.core.exception.InjectorException;
+
 import java.lang.annotation.Annotation;
 import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
@@ -9,8 +11,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import io.booter.injector.core.exception.InjectorException;
 
 import static io.booter.injector.core.supplier.Utils.safeCall;
 import static io.booter.injector.core.supplier.Utils.validateParameters;
@@ -243,6 +243,9 @@ public final class LambdaFactory {
                 return null;
         }
     }
+
+    // Although these interfaces are declared public, they are internal for the LambdaFactory and not intended
+    // for outside use.
 
     public interface Invocable0<T> {
         T invoke();
