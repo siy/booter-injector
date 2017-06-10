@@ -23,30 +23,50 @@ import io.booter.injector.core.supplier.Utils;
 import static io.booter.injector.core.supplier.SupplierFactory.*;
 import static io.booter.injector.core.supplier.Suppliers.factoryLazy;
 
+/**
+ * Implementation of the {@link Injector}.
+ * <br />
+ *
+ */
 public class ScanningInjector implements Injector {
     private final ConcurrentMap<Key, Supplier<?>> bindings = new ConcurrentHashMap<>();
     private final ConcurrentMap<Class<?>, Class<?>> modules = new ConcurrentHashMap<>();
 
+    /**
+     * Create instance of injector.
+     */
     public ScanningInjector() {
         bindings.put(Key.of(Injector.class), () -> this);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T> T get(Class<T> clazz) {
         return supplier(clazz).get();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SuppressWarnings("unchecked")
     public <T> T get(Key key) {
         return (T) supplier(key).get();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T> Supplier<T> supplier(Class<T> clazz) {
         return supplier(Key.of(clazz));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @SuppressWarnings("unchecked")
     public <T> Supplier<T> supplier(Key key) {
@@ -69,6 +89,9 @@ public class ScanningInjector implements Injector {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Injector configure(Class<?>... configurators) {
         if (configurators == null) {
@@ -102,7 +125,6 @@ public class ScanningInjector implements Injector {
     private void bindImplementations(Binding<?> binding) {
         Key key = binding.key();
 
-        //TODO: mention in docs: classes bound via configure() method are not subject of @ConfiguredBy configuration
         Supplier<?> supplier = binding.isResolved() ? (Supplier<?>) binding.binding()
                                                     : buildSupplier(binding, bindDependencies(key, (Class<?>) binding.binding()));
 

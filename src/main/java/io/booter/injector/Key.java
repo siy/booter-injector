@@ -11,6 +11,14 @@ import io.booter.injector.annotations.BindingAnnotation;
 import io.booter.injector.core.annotation.AnnotationFactory;
 import io.booter.injector.core.exception.InjectorException;
 
+/**
+ * Injection point key class.
+ * <br />
+ * This class represents details of the single injection dependency - type and optional annotation. Note that annotation
+ * held by key must be itself annotated with {@link BindingAnnotation} annotation.
+ *
+ * @see BindingAnnotation
+ */
 public class Key {
     private final Annotation annotation;
     private final Type type;
@@ -32,6 +40,13 @@ public class Key {
         this.supplier = supplier;
     }
 
+    /**
+     * Create key for single method/constructor parameter.
+     *
+     * @param parameter
+     *          Parameter to build key for.
+     * @return Created key.
+     */
     public static Key of(Parameter parameter) {
         Annotation[] annotations = parameter.getAnnotations();
 
@@ -53,22 +68,76 @@ public class Key {
         throw new InjectorException("Unable to determine parameter type for " + parameter);
     }
 
+    /**
+     * Create key for specified {@link Type}.
+     *
+     * @param type
+     *          Type to create key for.
+     * @return Created key
+     */
     public static Key of(Type type) {
         return new Key(type, false);
     }
 
+    /**
+     * Create key for specified {@link Type} and annotations. Note that among provided at most one annotation will be
+     * used to describe key. All provided annotations are checked and first one which is annotated with
+     * {@link BindingAnnotation} will be selected. If no such annotations exists among provided, then resulting key
+     * will have no annotations at all.
+     *
+     * @param type
+     *          Type to create key for.
+     * @param annotations
+     *          Annotations to choose from.
+     * @return Created key
+     */
     public static Key of(Type type, Annotation... annotations) {
         return new Key(type, false, annotations);
     }
 
+    /**
+     * Create key for specified {@link Type} and annotations. Note that among provided at most one annotation will be
+     * used to describe key. All provided annotations are checked and first one which is annotated with
+     * {@link BindingAnnotation} will be selected. If no such annotations exists among provided, then resulting key
+     * will have no annotations at all.
+     *
+     * @param type
+     *          Type to create key for.
+     * @param isSupplier
+     *          Mark key as related to injection of {@link Supplier} instead of regular injection.
+     * @param annotations
+     *          Annotations to choose from.
+     * @return Created key
+     */
     public static Key of(Type type, boolean isSupplier, Annotation... annotations) {
         return new Key(type, isSupplier, annotations);
     }
 
+    /**
+     * Create key for specified {@link TypeToken}. Since {@link TypeToken} allows to capture full type information,
+     * resulting key will also describe precise injection point type.
+     *
+     * @param token
+     *          Type token to create key for.
+     * @return Created key
+     */
     public static <T> Key of(TypeToken<T> token) {
         return new Key(token.type(), false);
     }
 
+    /**
+     * Create key for specified {@link TypeToken}. Since {@link TypeToken} allows to capture full type information,
+     * resulting key will also describe precise injection point type. Note that among provided at most one annotation
+     * will be used to describe key. All provided annotations are checked and first one which is annotated with
+     * {@link BindingAnnotation} will be selected. If no such annotations exists among provided, then resulting key
+     * will have no annotations at all.
+     *
+     * @param token
+     *          Type token to create key for.
+     * @param annotations
+     *          Annotations to choose from.
+     * @return Created key
+     */
     public static <T> Key of(TypeToken<T> token, Annotation... annotations) {
         return new Key(token.type(), false, annotations);
     }
@@ -92,22 +161,48 @@ public class Key {
         return  type.equals(key.type) && Objects.equals(annotation, key.annotation);
     }
 
+    /**
+     * Get retrieved information about raw class behind key type information. For example, key for
+     * <code>List&lt;String&gt></code> has raw class <code>List</code>.
+     *
+     * @return Raw class of the key type.
+     */
     public Class<?> rawClass() {
         return clazz;
     }
 
+    /**
+     * Get key type.
+     *
+     * @return Key type.
+     */
     public Type type() {
         return type;
     }
 
+    /**
+     * Get annotation associated with key.
+     *
+     * @return Annotation for key or <code>null</code> if no such annotation present.
+     */
     public Annotation annotation() {
         return annotation;
     }
 
+    /**
+     * @return <code>true</code> if key is created for {@link Supplier} injection point and <code>false</code> otherwise.
+     */
     public boolean isSupplier() {
         return supplier;
     }
 
+    /**
+     * Create new key from existing with added or replaced annotation.
+     *
+     * @param annotation
+     *          Type of the new annotation for key.
+     * @return Created key.
+     */
     public Key with(Class<? extends Annotation> annotation) {
         if (!annotation.isAnnotationPresent(BindingAnnotation.class)) {
             throw new InjectorException("Annotation "
@@ -119,6 +214,13 @@ public class Key {
         return new Key(type, supplier, clazz, AnnotationFactory.create(annotation));
     }
 
+    /**
+     * Create new key from existing with added or replaced annotation.
+     *
+     * @param annotation
+     *          New annotation for key.
+     * @return Created key.
+     */
     public Key with(Annotation annotation) {
         if (!annotation.annotationType().isAnnotationPresent(BindingAnnotation.class)) {
             throw new InjectorException("Annotation "

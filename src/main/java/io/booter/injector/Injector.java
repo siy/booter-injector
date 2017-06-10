@@ -1,9 +1,10 @@
 package io.booter.injector;
 
-import io.booter.injector.core.ScanningInjector;
-
 import java.util.function.Supplier;
 
+import io.booter.injector.core.ScanningInjector;
+
+//TODO: more details about injector behavior - (constructor selection rules),
 /**
  * Injector API interface.
  */

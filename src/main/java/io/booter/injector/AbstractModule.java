@@ -1,11 +1,11 @@
 package io.booter.injector;
 
-import io.booter.injector.core.Bindings;
-
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+
+import io.booter.injector.core.Bindings;
 
 /**
  * Convenient boilerplate for application modules. Using this class as a base class for module implementation
@@ -20,6 +20,11 @@ import java.util.function.Supplier;
  *      }
  *  }
  * }</pre>
+ *
+ * Note that {@link io.booter.injector.annotations.ConfiguredBy} annotations present in classes bound inside
+ * {@link #configure()} method are ignored and relevant modules are not loaded.
+ *
+ * @see io.booter.injector.annotations.ConfiguredBy
  */
 public abstract class AbstractModule implements Module {
     private final List<Binding<?>> bindings = new ArrayList<>();
