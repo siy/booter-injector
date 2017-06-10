@@ -25,8 +25,8 @@ import static io.booter.injector.core.supplier.Suppliers.factoryLazy;
 
 /**
  * Implementation of the {@link Injector}.
- * <br />
- *
+ * <p>
+ * This implementation uses lazy evaluation and batching to achieve optimal performance in different use cases.
  */
 public class ScanningInjector implements Injector {
     private final ConcurrentMap<Key, Supplier<?>> bindings = new ConcurrentHashMap<>();

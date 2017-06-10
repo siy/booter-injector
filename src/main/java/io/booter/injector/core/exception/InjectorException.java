@@ -1,9 +1,12 @@
 package io.booter.injector.core.exception;
 
+/**
+ * Injector exception type.
+ */
 public class InjectorException extends RuntimeException {
-	private static final long serialVersionUID = -4685894495982223864L;
+    private static final long serialVersionUID = -4685894495982223864L;
 
-	public InjectorException(String message) {
+    public InjectorException(String message) {
         super(message);
     }
 

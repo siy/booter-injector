@@ -6,7 +6,39 @@ import io.booter.injector.core.ScanningInjector;
 
 //TODO: more details about injector behavior - (constructor selection rules),
 /**
- * Injector API interface.
+ * <h3>Injector API</h3>
+ * <p>
+ * Injector is used to instantiate classes along with their dependencies (i.e. other classes necessary to instantiate
+ * required class). Information about how to instantiate class and its dependencies collected from constructors,
+ * special annotations and from dedicated configuration classes. Configuration classes can be provided to injector in
+ * declarative way or passed directly to {@link #configure(Class[])} method.
+ * <p>
+ * Information about connection between dependency and its implementation called <b>binding</b>. Bindings can be one of
+ * two categories - implicit and explicit. Implicit bindings are collected by analysing class constructor parameters.
+ * Explicit bindings are provided via configuration.
+ * <p>
+ * In order to create instance of the particular class, appropriate constructor should be used. Selection of the
+ * constructor is done automatically or with the help of {@link io.booter.injector.annotations.Inject} annotation.
+ * Selection of the constructor is done as follows (highest precedence first):
+ * <ol>
+ *     <li>If constructor annotated with {@link io.booter.injector.annotations.Inject} is present then it is selected.</li>
+ *     <li>If no constructor is annotated then:
+ *      <ol>
+ *          <li>If there is only one constructor, then this constructor is selected.</li>
+ *          <li>If default constructor is present then it is used.</li>
+ *      </ol>
+ *     </li>
+ * </ol>
+ * <p>
+ * If there are more than one non-default constructors and no default constructor, then {@link Injector} requires that
+ * one of the constructors must be annotated with {@link io.booter.injector.annotations.Inject}.
+ *
+ * @see io.booter.injector.annotations.BindingAnnotation
+ * @see io.booter.injector.annotations.ConfiguredBy
+ * @see io.booter.injector.annotations.ImplementedBy
+ * @see io.booter.injector.annotations.Supplies
+ * @see Module
+ * @see AbstractModule
  */
 public interface Injector {
     /**
