@@ -7,6 +7,23 @@
     <groupId>io.booter</groupId>
     <artifactId>injector</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Booter Injector</name>
+    <description>Fast and compact dependency injection library</description>
+    <url>http://www.rx-booter.org</url>
+
+    <scm>
+        <url>https://github.com/siy/booter-injector.git</url>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <properties>
         <mockito.version>2.7.5</mockito.version>
@@ -35,7 +52,6 @@
             <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>

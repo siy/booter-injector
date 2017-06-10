@@ -1,11 +1,25 @@
 /*
+ * Copyright (c) 2017 Sergiy Yevtushenko
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
  * License: Apache License, Version 2.0
  * See the LICENSE file in the root directory or at <a href="http://www.apache.org/licenses/LICENSE-2">apache.org</a>.
  */
 package io.booter.injector.core.annotation;
 
-
-import io.booter.injector.core.exception.InjectorException;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -13,6 +27,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.Map.Entry;
+
+import io.booter.injector.core.exception.InjectorException;
 
 /**
  * An implementation of {@link Annotation} that mimics the behavior of normal annotations.
