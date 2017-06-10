@@ -5,8 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.*;
 
 /**
  * Convenient annotation for marking dependencies using simple strings. For example:
@@ -22,7 +21,7 @@ import static java.lang.annotation.ElementType.PARAMETER;
  * }</pre>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({PARAMETER, FIELD})
+@Target({PARAMETER, FIELD, METHOD, CONSTRUCTOR})
 @Documented
 @BindingAnnotation
 public @interface Named {

@@ -6,7 +6,7 @@ Tiny and fast dependency injector for Java 8 and up.
 ## Overview
 
 Booter-injector is a yet another dependency injection container (framework, whatever). 
-It's small (less than 50KB), fast (comparable to Java **new** call) and haze no external dependencies.
+It's small (less than 50KB), fast (comparable to Java **new** call) and has no external dependencies.
 
 ## Motivation
 The project aims three main goals:
@@ -160,7 +160,12 @@ of configuration class.
 annotation in order to be recognized by injector. Example of such an annotation declaration is provided below:
 
 ~~~~
-(--example of creation of binding annotation --) 
+@Retention(RetentionPolicy.RUNTIME)
+@Target({PARAMETER, METHOD})
+@Documented
+@BindingAnnotation
+public @interface MyAnnotation {
+}
 ~~~~
 
 Handling of configurator class implementing **Module** interface (or extending **AbstractModule** class) is very 
@@ -200,9 +205,22 @@ dependencies:
         protected void configure() {
             //Bind annotated class
             bind(Bar.class).annotatedWith(FooBarAnnotation.class).to(FooBarImpl.class);
-            
+
             //Bind List<String>
             bind(new TypeToken<List<String>>() {}).toInstance(stringListInstance);
+
+            //Bind List<String> annotated
+            bind(new TypeToken<List<String>>() {}).annotatedWith(FooBarAnnotation.class).toInstance(annotatedStringListInstance);
         }
     }
-~~~~   
+~~~~
+
+## Manual Injector Configuration
+
+Beside configuring injector via classes annotated with **@ConfiguredBy** annotation, it is possible to configure 
+injector by directly submitting configuration classes to **Injector.configure()**.
+
+## Acknowledgements
+
+This project had a great inspiration from other dependency injection frameworks, but most notable one is, of course,
+Google Guice.
