@@ -85,8 +85,8 @@ can be configured by using **@ImplementedBy** annotation on interface:
 
 ## Advanced Configuration with @ConfiguredBy Annotation
 
-The **@ImplementedBy** annotation is useful in simple cases, but sometimes it's necessary to establish binding for 
-complex generic signatures or annotated constructor parameters. Such a cases can be handled in two ways - using 
+The **@ImplementedBy** annotation is useful in simple cases, but sometimes it's necessary to establish more complex 
+bindings like ones for parametrized types and/or annotated types. Such a cases can be handled in two ways - using 
 **@ConfiguredBy** annotation or by performing direct injector configuration. Latter approach is discussed below, here we
 discuss former approach.
 
@@ -116,11 +116,50 @@ method return types. For example, following method in configurator class will pr
     }
 ~~~~
 
-If such a method has parameters, they will be resolved just like regular constructor dependencies
-and passed as arguments to the method.
+If such a method has parameters, they will be resolved and injected during method invocation 
+just like regular constructor dependencies. If such a method has binding annotation, it will be attached to type
+returned by method and then will be used to satisfy dependencies which require annotated type. For example:
 
-**NOTE:** Configurator class is instantiated via injector itself, so if it has any dependencies, they will be resolved 
-and injected. 
+~~~~
+    public class FooImplModule {
+    ...
+        @Supplies
+        List<String> getStringList() {
+        ...
+        }
+    ...
+        @Supplies
+        @MyAnnotation
+        List<String> getAnnotatedStringList() {
+        ...
+        }
+    ...
+    }
+    
+...
+    @ConfiguredBy(FooImplModule.class)
+    public class FooImpl implements Foo {
+    ...
+        public FooImpl(List<String> stringList, @MyAnnotation List<String> annotatedStringList) {
+        ...
+        }
+    ...
+    }
+~~~~
+
+The **getStringList()** method will satisfy dependency for first (not annotated) parameter of **FooImpl** constructor, 
+while **getAnnotatedStringList()** will match dependency for second (annotated) parameter.
+
+**NOTE 1:** Configurator classes are instantiated via injector and their dependencies are resolved as for any other
+class instantiated via injector. 
+**NOTE 2:** Configurator classes also may have **@ConfiguredBy** annotation, but they are ignored during instantiation 
+of configuration class. 
+**NOTE 3:** Annotations which are used to specify dependencies should be annotated with **@BindingAnnotation** 
+annotation in order to be recognized by injector. Example of such an annotation declaration is provided below:
+
+~~~~
+(--example of creation of binding annotation --) 
+~~~~
 
 Handling of configurator class implementing **Module** interface (or extending **AbstractModule** class) is very 
 similar to handling of POJO configurator, but when all methods are collected, then **configure()** method 
@@ -146,7 +185,7 @@ For example, different types of bindings can be done using convenient fluent syn
     }
 ~~~~ 
 
-Note that singleton binding by default is performed as lazy (i.e. lazy singleton will be created). If eager singleton is 
+Singleton binding by default is performed as lazy (i.e. lazy singleton will be created). If eager singleton is 
 necessary, there is also **toEagerSingleton()** method. Lazy singleton binding can be made explicit by using 
 **toLazySingleton()** method. Obviously plain **toSingleton()** is just a synonym to **toLazySingleton()**.
 

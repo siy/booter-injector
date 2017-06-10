@@ -2,7 +2,7 @@ package io.booter.injector;
 
 import java.util.function.Supplier;
 
-import io.booter.injector.core.ScanningInjector;
+import io.booter.injector.core.InjectorImpl;
 
 //TODO: more details about injector behavior - (constructor selection rules),
 /**
@@ -126,7 +126,7 @@ public interface Injector {
      * @return created injector.
      */
     static Injector create() {
-        return new ScanningInjector();
+        return new InjectorImpl();
     }
 
     /**
@@ -136,6 +136,6 @@ public interface Injector {
      * @return created and configured injector.
      */
     static Injector create(Class<?>...classes) {
-        return new ScanningInjector().configure(classes);
+        return new InjectorImpl().configure(classes);
     }
 }

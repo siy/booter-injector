@@ -1,5 +1,7 @@
 package io.booter.injector.core;
 
+import java.util.List;
+
 import io.booter.injector.Injector;
 import io.booter.injector.core.beans.*;
 import io.booter.injector.core.beans.tree.Bar;
@@ -9,13 +11,11 @@ import io.booter.injector.core.beans.tree.Foo;
 import io.booter.injector.core.exception.InjectorException;
 import org.junit.Test;
 
-import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import static org.assertj.core.api.Assertions.*;
-
-public class ScanningInjectorTest {
+public class InjectorImplTest {
     private Injector getInjector() {
-        return new ScanningInjector();
+        return new InjectorImpl();
     }
 
     @Test

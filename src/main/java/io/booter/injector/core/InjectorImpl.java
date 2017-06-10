@@ -28,14 +28,14 @@ import static io.booter.injector.core.supplier.Suppliers.factoryLazy;
  * <p>
  * This implementation uses lazy evaluation and batching to achieve optimal performance in different use cases.
  */
-public class ScanningInjector implements Injector {
+public class InjectorImpl implements Injector {
     private final ConcurrentMap<Key, Supplier<?>> bindings = new ConcurrentHashMap<>();
     private final ConcurrentMap<Class<?>, Class<?>> modules = new ConcurrentHashMap<>();
 
     /**
      * Create instance of injector.
      */
-    public ScanningInjector() {
+    public InjectorImpl() {
         bindings.put(Key.of(Injector.class), () -> this);
     }
 
