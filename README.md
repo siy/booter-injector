@@ -152,8 +152,10 @@ while **getAnnotatedStringList()** will match dependency for second (annotated) 
 
 **NOTE 1:** Configurator classes are instantiated via injector and their dependencies are resolved as for any other
 class instantiated via injector. 
+
 **NOTE 2:** Configurator classes also may have **@ConfiguredBy** annotation, but they are ignored during instantiation 
 of configuration class. 
+
 **NOTE 3:** Annotations which are used to specify dependencies should be annotated with **@BindingAnnotation** 
 annotation in order to be recognized by injector. Example of such an annotation declaration is provided below:
 
