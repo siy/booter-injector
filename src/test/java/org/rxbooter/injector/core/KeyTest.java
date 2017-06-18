@@ -78,6 +78,7 @@ public class KeyTest {
         assertThat(key1).isEqualTo(key1);
         assertThat(key2).isEqualTo(key2);
 
+        //Key compared to string ??
         assertThat(key1.equals("")).isFalse();
         assertThat(key2.equals("")).isFalse();
     }

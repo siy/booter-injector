@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.rxbooter.injector.Injector;
 import org.rxbooter.injector.Key;
-
+//guys seem to be in love with lombock so maybe you wanna do it ;P
 /**
  * Representation of single entry in dependency tree. Instances of this class are used as containers for collected data
  * during dependency tree traversal.

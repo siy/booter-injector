@@ -42,13 +42,14 @@ public final class Suppliers {
 
         return new Supplier<T>() {
             private final Supplier<T> defaultDelegate = this::init;
-            private final AtomicBoolean marker = new AtomicBoolean();
+            private final AtomicBoolean noWayIKnowAtFirstGlanceWhatThisDoesVariable = new AtomicBoolean();
             private Supplier<T> delegate = defaultDelegate;
 
             private T init() {
-                if (marker.compareAndSet(false, true)) {
+                if (noWayIKnowAtFirstGlanceWhatThisDoesVariable.compareAndSet(false, true)) {
                     delegate = factory.get();
                 } else {
+                    //why would you leave this empty dont get it
                     while (delegate == defaultDelegate) {
                         //Intentionally left empty
                     }

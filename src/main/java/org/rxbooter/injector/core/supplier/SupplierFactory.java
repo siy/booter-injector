@@ -140,6 +140,8 @@ public final class SupplierFactory {
 
     @SuppressWarnings("unchecked")
     private static <T> ThrowingSupplier<T> mapMethodParameters(Method method, Supplier<?>[] suppliers) {
+
+       //that is way to fugly but probably no way to not have it
         switch (method.getParameterCount()) {
             case  0: return () -> (T) method.invoke(suppliers[0].get());
             case  1: return () -> (T) method.invoke(suppliers[0].get(), suppliers[1].get());
@@ -167,7 +169,8 @@ public final class SupplierFactory {
 
     private static <T> ThrowingSupplier<T> mapConstructorParameters(Constructor<T> constructor, Supplier<?>[] suppliers) {
         switch (constructor.getParameterCount()) {
-            case  0: return () -> constructor.newInstance();
+            //that is way to fugly but probably no way to not have it
+            case  0: return constructor::newInstance;
             case  1: return () -> constructor.newInstance(suppliers[0].get());
             case  2: return () -> constructor.newInstance(suppliers[0].get(), suppliers[1].get());
             case  3: return () -> constructor.newInstance(suppliers[0].get(), suppliers[1].get(), suppliers[2].get());
