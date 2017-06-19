@@ -228,6 +228,6 @@ injector by directly submitting configuration classes to **Injector.configure()*
 ## Acknowledgements
 
 This project had a great inspiration from other dependency injection frameworks, but most notable one is, probably,
-[Google Guice](https://github.com/google/guice). Also, I' like to mention 
+[Google Guice](https://github.com/google/guice). Also, I'd like to mention 
 [di-benchmark](https://github.com/greenlaw110/di-benchmark) project, which, despite some issues, was extremely helpful 
 for tuning **booter-injector** performance.
