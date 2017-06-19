@@ -16,11 +16,11 @@
 
 package org.rxbooter.injector;
 
-import java.util.function.Supplier;
-
 import org.rxbooter.injector.annotations.*;
 import org.rxbooter.injector.core.InjectorImpl;
 import org.rxbooter.injector.core.exception.InjectorException;
+
+import java.util.function.Supplier;
 
 //TODO: more details about injector behavior - (constructor selection rules),
 /**
@@ -107,7 +107,7 @@ public interface Injector {
 
     /**
      * Configure {@link Injector} with specified classes. Each class can provide two variants of configuration data:
-     * class may implement {@link Module} interface (or be a sublass of {@link AbstractModule}) and/or describe
+     * class may implement {@link Module} interface (or be a subclass of {@link AbstractModule}) and/or describe
      * bindings as methods annotated with {@link Supplies} annotation. Example of both
      * types of configuration:
      *

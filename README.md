@@ -6,11 +6,12 @@ Tiny and fast dependency injector for Java 8 and up.
 ## Overview
 
 Booter-injector is a yet another dependency injection container (framework, whatever). 
-It's small (less than 50KB), fast (comparable to Java **new** call) and has no external dependencies.
+It's small (about 50KB), fast (comparable to Java **new** call) and has no external dependencies.
 
 ## License
 This library is released under terms and conditions of Apache License, Version 2.0.
-Copy of license can be obtained at http://www.apache.org/licenses/LICENSE-2.0 . 
+Copy of license is included in the sources or can be obtained at 
+[Apache Software Foundation Site](http://www.apache.org/licenses/LICENSE-2.0). 
 
 ## Motivation
 The project aims three main goals:
@@ -226,5 +227,7 @@ injector by directly submitting configuration classes to **Injector.configure()*
 
 ## Acknowledgements
 
-This project had a great inspiration from other dependency injection frameworks, but most notable one is, of course,
-Google Guice.
+This project had a great inspiration from other dependency injection frameworks, but most notable one is, probably,
+[Google Guice](https://github.com/google/guice). Also, I' like to mention 
+[di-benchmark](https://github.com/greenlaw110/di-benchmark) project, which, despite some issues, was extremely helpful 
+for tuning **booter-injector** performance.
