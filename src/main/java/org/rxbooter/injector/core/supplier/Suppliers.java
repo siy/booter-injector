@@ -42,11 +42,11 @@ public final class Suppliers {
 
         return new Supplier<T>() {
             private final Supplier<T> defaultDelegate = this::init;
-            private final AtomicBoolean marker = new AtomicBoolean();
+            private final AtomicBoolean initialized = new AtomicBoolean();
             private Supplier<T> delegate = defaultDelegate;
 
             private T init() {
-                if (marker.compareAndSet(false, true)) {
+                if (initialized.compareAndSet(false, true)) {
                     delegate = factory.get();
                 } else {
                     while (delegate == defaultDelegate) {
