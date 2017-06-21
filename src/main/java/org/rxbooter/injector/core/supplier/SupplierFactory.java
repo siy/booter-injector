@@ -28,6 +28,7 @@ import org.rxbooter.injector.annotations.Singleton;
 import org.rxbooter.injector.core.supplier.Utils.ThrowingSupplier;
 
 import static org.rxbooter.injector.core.supplier.Suppliers.enhancing;
+import static org.rxbooter.injector.core.supplier.Suppliers.lazy;
 import static org.rxbooter.injector.core.supplier.Suppliers.singleton;
 
 /**
@@ -95,6 +96,9 @@ public final class SupplierFactory {
      * parameter supplier must provide instance of the class from which {@link Method} is taken. Note that there are
      * checks for number of parameters, but no check for parameter types, even for first parameter. Any discrepancies
      * in types (except regular Java type conversion like boxing/unboxing) will result to run time exception.
+     * <br />
+     * If method is annotated with {@link Singleton} annotation, then singleton supplier will be created. Note
+     * that in this case singleton computation style is ignored and lazy singleton is always created.
      *
      * @param method
      *          The method which will be used to create a supplier. Supplier will return value of exactly the same
@@ -108,9 +112,12 @@ public final class SupplierFactory {
     @SuppressWarnings("unchecked")
     public static <T> Supplier<T> createMethodSupplier(Method method, List<Supplier<?>> parameters) {
         Utils.validateParameters(method, parameters, 1);
-        Supplier<?>[] suppliers = parameters.toArray(new Supplier[parameters.size()]);
 
-        return () -> Utils.safeCall(mapMethodParameters(method, suppliers), method);
+        Supplier<?>[] suppliers = parameters.toArray(new Supplier[parameters.size()]);
+        Supplier<T> supplier = () -> Utils.safeCall(mapMethodParameters(method, suppliers), method);
+        Singleton singleton = method.getAnnotation(Singleton.class);
+
+        return singleton == null ? supplier : lazy(supplier);
     }
 
     private static <T> Supplier<T> tryWrapWithPostConstruct(Constructor<T> constructor, Supplier<T> factory) {
@@ -167,7 +174,7 @@ public final class SupplierFactory {
 
     private static <T> ThrowingSupplier<T> mapConstructorParameters(Constructor<T> constructor, Supplier<?>[] suppliers) {
         switch (constructor.getParameterCount()) {
-            case  0: return () -> constructor.newInstance();
+            case  0: return constructor::newInstance;
             case  1: return () -> constructor.newInstance(suppliers[0].get());
             case  2: return () -> constructor.newInstance(suppliers[0].get(), suppliers[1].get());
             case  3: return () -> constructor.newInstance(suppliers[0].get(), suppliers[1].get(), suppliers[2].get());

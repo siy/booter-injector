@@ -108,7 +108,8 @@ This annotation requires parameter - class where bindings are configured:
 Class passed to **@ConfiguredBy** as a parameter can be either POJO or implementation of **Module** interface.
 For further explanation this class will be referred as **_configurator_**.
 In case of POJO, all methods of class annotated with **@Supplies** annotation are used as factories for types matching 
-method return types. For example, following method in configurator class will produce **List<String>** instances:
+method return types. Such a methods are referred as **_supplying methods_**. 
+For example, following method in configurator class will produce **List<String>** instances:
 
 ~~~~
     public class FooImplModule {
@@ -121,9 +122,9 @@ method return types. For example, following method in configurator class will pr
     }
 ~~~~
 
-If such a method has parameters, they will be resolved and injected during method invocation 
-just like regular constructor dependencies. If such a method has binding annotation, it will be attached to type
-returned by method and then will be used to satisfy dependencies which require annotated type. For example:
+If supplying method has parameters, they will be resolved and injected during method invocation 
+just like regular constructor dependencies. Binding annotation attached to the method declaration will be attached 
+to type returned by method and then will be used to satisfy dependencies which require annotated type. For example:
 
 ~~~~
     public class FooImplModule {
@@ -171,6 +172,22 @@ annotation in order to be recognized by injector. Example of such an annotation 
 @BindingAnnotation
 public @interface MyAnnotation {
 }
+~~~~
+
+**NOTE 4:** It is possible to declare singleton suppliers with supplying methods. To do so just annotate method with **@Singleton**
+annotation. Note though, that this in this case it is impossible to declare eager singleton. Example of declaring 
+singleton supplying methods:  
+
+~~~~
+    public class FooImplModule {
+    ...
+        @Supplies
+        @Singleton
+        List<String> getStringList() {
+        ...
+        }
+    ...
+    }
 ~~~~
 
 Handling of configurator class implementing **Module** interface (or extending **AbstractModule** class) is very 
