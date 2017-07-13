@@ -31,9 +31,9 @@ annotation.
 
 ~~~~
     <dependency>
-      <groupId>io.booter</groupId>
-      <artifactId>injector</artifactId>
-      <version>1.0-SNAPSHOT</version>
+        <groupId>org.rx-booter</groupId>
+        <artifactId>injector</artifactId>
+        <version>1.0-SNAPSHOT</version>
     </dependency>
 ~~~~
 
