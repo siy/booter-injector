@@ -1,7 +1,12 @@
 [![Build Status](https://travis-ci.org/siy/booter-injector.svg?branch=master)](https://travis-ci.org/siy/booter-injector)
+[![](https://jitpack.io/v/siy/booter-injector.svg)](https://jitpack.io/#siy/booter-injector)
 
 # booter-injector
-Tiny and fast dependency injector for Java 8 and up.
+Tiny and fast dependency injector for Java 8. Note that for Java 9+ it requires modifications.
+
+**NOTE:** This implementation uses run-time reflection to perform tasks. Most existing dependency injection framewroks/libraries 
+using this approach too. Nevertheless, in more recent versions of Java compile-time dependency injection 
+would be better approach.
 
 ## Overview
 
@@ -15,26 +20,37 @@ Copy of license is included in the sources or can be obtained at
 
 ## Motivation
 The project aims three main goals:
-1. Make dependency injection fast
+1. Make dependency injection really fast
 2. Minimal and convenient configuration
 2. Facilitate best practices - constructor injection and keep configuration close to configured class.
 
 First goal is achieved by adopting method handles and run-time generated lambdas and lazy evaluation. 
 Second goal is achieved by building configuration at run time, automatically detecting proper constructor in most 
-cases and by favoring convention over configuration.
+cases and by favoring convention over configuration. Note that taken approach does not require package scanning
+or anything like that.
 Third goal is achieved by limiting injection support to constructor injection only and using **@ConfiguredBy** 
 annotation.
 
 ## Getting Started
 ### Adding dependency to Maven project
-(NOTE: library is not yet included into public Maven repos)
 
+Dependency itself:
 ~~~~
     <dependency>
         <groupId>org.rx-booter</groupId>
         <artifactId>injector</artifactId>
         <version>1.0-SNAPSHOT</version>
     </dependency>
+~~~~
+
+Repository:
+~~~~
+    <repositories>
+		<repository>
+		    <id>jitpack.io</id>
+		    <url>https://jitpack.io</url>
+		</repository>
+	</repositories>
 ~~~~
 
 ## Simple example
@@ -51,7 +67,7 @@ Instantiate simple class:
 ~~~~
 
 By default all classes are handled as **prototype** (in terms of Spring DI), i.e. for every **get()** request new 
-instance is created. In order to make particular class a singleton it's enough to annotate class with **@Singleton** 
+instance is created. In order to make particular class a singleton it is enough to annotate class with **@Singleton** 
 annotation:
 
 ~~~~
@@ -62,7 +78,7 @@ annotation:
 ~~~~ 
 
 Now for every invocation of **get()** same instance will be returned. By convention singletons created this way 
-are lazily evaluated, i.e. the instance of the singleton is created only when first request for singleton is processed.
+are lazily instantiated, i.e. the instance of the singleton is created only when first request for singleton is processed.
 If particular singleton should be evaluated upfront (i.e. eagerly), it's enough to change annotation as follows:
 
 ~~~~
@@ -77,23 +93,27 @@ If particular singleton should be evaluated upfront (i.e. eagerly), it's enough 
 In many cases interfaces have exactly one implementation. For such a cases binding between interface and implementation
 can be configured by using **@ImplementedBy** annotation on interface:
 
+Foo.java:
 ~~~~
     @ImplementedBy(FooImpl.class)
     public interface Foo {
     ...
     }
+~~~~
+FooImpl.java:
+~~~~
     ...
     public class FooImpl implements Foo {
     ...
     }
-~~~~ 
+~~~~
 
 ## Advanced Configuration with @ConfiguredBy Annotation
 
 The **@ImplementedBy** annotation is useful in simple cases, but sometimes it's necessary to establish more complex 
 bindings like ones for parametrized types and/or annotated types. Such a cases can be handled in two ways - using 
-**@ConfiguredBy** annotation or by performing direct injector configuration. Latter approach is discussed below, here we
-discuss former approach.
+**@ConfiguredBy** annotation or by performing direct injector configuration. Latter approach is discussed below, here 
+described use of **@ConfiguredBy** annotation.
 
 In order to establish such a complex binding, add **@ConfiguredBy** annotation to **implementation** class. 
 This annotation requires parameter - class where bindings are configured:
@@ -159,8 +179,7 @@ while **getAnnotatedStringList()** will match dependency for second (annotated) 
 **NOTE 1:** Configurator classes are instantiated via injector and their dependencies are resolved as for any other
 class instantiated via injector. 
 
-**NOTE 2:** Configurator classes also may have **@ConfiguredBy** annotation, but they are ignored during instantiation 
-of configuration class. 
+**NOTE 2:** The **@ConfiguredBy** annotation on configurator classes are ignored. 
 
 **NOTE 3:** Annotations which are used to specify dependencies should be annotated with **@BindingAnnotation** 
 annotation in order to be recognized by injector. Example of such an annotation declaration is provided below:
